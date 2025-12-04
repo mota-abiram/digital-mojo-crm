@@ -6,7 +6,14 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
 
-const SortableStageItem = ({ stage, onRemove, onChange }: { stage: any, onRemove: (id: string) => void, onChange: (id: string, name: string) => void }) => {
+interface SortableStageItemProps {
+    stage: any;
+    onRemove: (id: string) => void;
+    onChange: (id: string, title: string) => void;
+    onColorChange: (id: string, color: string) => void;
+}
+
+const SortableStageItem: React.FC<SortableStageItemProps> = ({ stage, onRemove, onChange, onColorChange }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: stage.id });
 
     const style = {
@@ -21,12 +28,19 @@ const SortableStageItem = ({ stage, onRemove, onChange }: { stage: any, onRemove
             </div>
             <input
                 type="text"
-                value={stage.name}
+                value={stage.title}
                 onChange={(e) => onChange(stage.id, e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-primary focus:border-primary"
                 placeholder="Stage Name"
             />
-            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: stage.color }}></div>
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                <input
+                    type="color"
+                    value={stage.color}
+                    onChange={(e) => onColorChange(stage.id, e.target.value)}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 border-0 cursor-pointer"
+                />
+            </div>
             <button
                 onClick={() => onRemove(stage.id)}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -60,14 +74,18 @@ const Settings: React.FC = () => {
         }
     };
 
-    const handleStageChange = (id: string, newName: string) => {
-        setLocalStages(localStages.map(s => s.id === id ? { ...s, name: newName } : s));
+    const handleStageChange = (id: string, newTitle: string) => {
+        setLocalStages(localStages.map(s => s.id === id ? { ...s, title: newTitle } : s));
+    };
+
+    const handleStageColorChange = (id: string, newColor: string) => {
+        setLocalStages(localStages.map(s => s.id === id ? { ...s, color: newColor } : s));
     };
 
     const handleAddStage = () => {
         const newStage = {
             id: `stage-${Date.now()}`,
-            name: 'New Stage',
+            title: 'New Stage',
             color: '#E2E8F0',
             order: localStages.length
         };
@@ -111,8 +129,8 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('pipelines')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'pipelines'
-                                    ? 'border-primary bg-primary/5 text-primary'
-                                    : 'border-transparent text-gray-600 hover:bg-gray-50'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             Pipeline Settings
@@ -120,8 +138,8 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('team')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'team'
-                                    ? 'border-primary bg-primary/5 text-primary'
-                                    : 'border-transparent text-gray-600 hover:bg-gray-50'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             Team Management
@@ -129,8 +147,8 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('profile')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'profile'
-                                    ? 'border-primary bg-primary/5 text-primary'
-                                    : 'border-transparent text-gray-600 hover:bg-gray-50'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             Company Profile
@@ -171,6 +189,7 @@ const Settings: React.FC = () => {
                                                 stage={stage}
                                                 onRemove={handleRemoveStage}
                                                 onChange={handleStageChange}
+                                                onColorChange={handleStageColorChange}
                                             />
                                         ))}
                                     </div>
