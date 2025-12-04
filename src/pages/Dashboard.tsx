@@ -13,7 +13,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Target, Users, CheckCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, IndianRupee, Target, Users, CheckCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const Dashboard: React.FC = () => {
@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Opportunities', value: totalOpportunities.toString(), change: '+0%', isPositive: true, icon: Target },
-          { label: 'Pipeline Value', value: `₹${totalPipelineValue.toLocaleString()}`, change: '+0%', isPositive: true, icon: DollarSign },
+          { label: 'Pipeline Value', value: `₹${totalPipelineValue.toLocaleString()}`, change: '+0%', isPositive: true, icon: IndianRupee },
           { label: 'Conversion Rate', value: `${conversionRate}%`, change: '0%', isPositive: true, icon: TrendingUp },
           { label: 'Closed Won', value: wonOpportunities.toString(), change: '+0%', isPositive: true, icon: CheckCircle },
         ].map((stat, idx) => (
