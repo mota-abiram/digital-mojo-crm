@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
 import { Lock, Mail, Loader2 } from 'lucide-react';
@@ -33,6 +33,18 @@ const Login: React.FC = () => {
             toast.error(errorMessage);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            toast.success('Logged in successfully');
+            navigate('/dashboard');
+        } catch (error: any) {
+            console.error('Google login error:', error);
+            toast.error('Failed to login with Google');
         }
     };
 
@@ -151,15 +163,17 @@ const Login: React.FC = () => {
 
                         <div className="mt-6 grid grid-cols-2 gap-3">
                             <div>
-                                <a
-                                    href="#"
-                                    className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleLogin}
+                                    disabled={isLoading}
+                                    className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <span className="sr-only">Sign in with Google</span>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 0.307 5.387 0 12s5.56 12 12.48 12c3.6 0 6.347-1.173 8.547-3.413C23.213 18.107 24 15.4 24 12.853c0-.853-.093-1.707-.267-2.56h-11.253z" />
                                     </svg>
-                                </a>
+                                </button>
                             </div>
 
                             <div>

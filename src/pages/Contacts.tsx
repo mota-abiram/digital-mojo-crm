@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import toast from 'react-hot-toast';
 import { Modal } from '../components/Modal';
 import { useParams, useNavigate } from 'react-router-dom';
+import { COUNTRY_CODES } from '../utils/countryCodes';
 
 const Contacts: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,10 +34,11 @@ const Contacts: React.FC = () => {
     }, [searchTerm, searchContacts, fetchContacts]);
 
     // Form state
+    const [countryCode, setCountryCode] = useState('+1');
+    const [localPhone, setLocalPhone] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        phone: '',
         type: 'Lead',
         tags: ''
     });
@@ -81,16 +83,28 @@ const Contacts: React.FC = () => {
     const handleOpenModal = (contact?: Contact) => {
         if (contact) {
             setEditingId(contact.id);
+
+            // Parse phone number
+            const matchingCode = COUNTRY_CODES.find(c => contact.phone && contact.phone.startsWith(c.code));
+            if (matchingCode) {
+                setCountryCode(matchingCode.code);
+                setLocalPhone(contact.phone.slice(matchingCode.code.length));
+            } else {
+                setCountryCode('+1');
+                setLocalPhone(contact.phone || '');
+            }
+
             setFormData({
                 name: contact.name,
                 email: contact.email,
-                phone: contact.phone,
                 type: contact.type,
                 tags: contact.tags.join(', ')
             });
         } else {
             setEditingId(null);
-            setFormData({ name: '', email: '', phone: '', type: 'Lead', tags: '' });
+            setCountryCode('+1');
+            setLocalPhone('');
+            setFormData({ name: '', email: '', type: 'Lead', tags: '' });
         }
         setIsModalOpen(true);
     };
@@ -104,7 +118,7 @@ const Contacts: React.FC = () => {
         const contactData = {
             name: formData.name,
             email: formData.email,
-            phone: formData.phone,
+            phone: countryCode + localPhone,
             type: formData.type as 'Lead' | 'Customer' | 'Prospect' | 'High-Value',
             tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
             owner: currentUser?.id || 'Unknown'
@@ -119,7 +133,9 @@ const Contacts: React.FC = () => {
                 toast.success('Contact created successfully');
             }
             setIsModalOpen(false);
-            setFormData({ name: '', email: '', phone: '', type: 'Lead', tags: '' });
+            setFormData({ name: '', email: '', type: 'Lead', tags: '' });
+            setCountryCode('+1');
+            setLocalPhone('');
         } catch (error: any) {
             console.error('Error saving contact:', error);
             toast.error('Failed to save contact: ' + (error.message || 'Unknown error'));
@@ -464,13 +480,26 @@ const Contacts: React.FC = () => {
                     </div>
                     <div>
                         <label className="block mb-2 text-sm font-medium text-gray-900">Phone Number</label>
-                        <input
-                            type="tel"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
-                            placeholder="+1 (555) 000-0000"
-                        />
+                        <div className="flex gap-2">
+                            <select
+                                value={countryCode}
+                                onChange={(e) => setCountryCode(e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-32 p-2.5"
+                            >
+                                {COUNTRY_CODES.map((country) => (
+                                    <option key={country.name} value={country.code}>
+                                        {country.flag} {country.name} ({country.code})
+                                    </option>
+                                ))}
+                            </select>
+                            <input
+                                type="tel"
+                                value={localPhone}
+                                onChange={(e) => setLocalPhone(e.target.value)}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
+                                placeholder="123 456 7890"
+                            />
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>

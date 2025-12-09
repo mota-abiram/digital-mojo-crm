@@ -295,7 +295,12 @@ export const useStore = create<AppState>((set, get) => ({
     },
     addAppointment: async (apt) => {
         const newApt = await api.appointments.create(apt);
-        set((state) => ({ appointments: [...state.appointments, newApt] }));
+        set((state) => {
+            if (state.appointments.some(a => a.id === newApt.id)) {
+                return { appointments: state.appointments };
+            }
+            return { appointments: [...state.appointments, newApt] };
+        });
     },
     updateAppointment: async (id, apt) => {
         await api.appointments.update(id, apt);

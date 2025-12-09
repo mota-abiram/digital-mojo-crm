@@ -106,7 +106,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <svg className="h-8 w-8 text-[#05acd6]" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
             </svg>
-            <h1 className="text-lg font-bold tracking-tight">GoHighLevel</h1>
+            <h1 className="text-lg font-bold tracking-tight">Digital-Mojo</h1>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">
             <X size={24} />
