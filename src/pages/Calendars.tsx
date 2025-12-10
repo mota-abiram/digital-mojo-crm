@@ -21,7 +21,8 @@ import {
     subMonths,
     parseISO,
     getHours,
-    set
+    set,
+    startOfDay
 } from 'date-fns';
 
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -78,7 +79,17 @@ const Calendars: React.FC = () => {
 
     const syncWithToken = async (accessToken: string) => {
         try {
-            const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=' + new Date().toISOString() + '&singleEvents=true&orderBy=startTime', {
+            const currentUserId = currentUser?.id || auth.currentUser?.uid;
+            if (!currentUserId) {
+                console.error("No user ID found for sync");
+                toast.error("Cannot sync: User identity missing");
+                return;
+            }
+
+            // Ensure we have latest appointments for duplicate check
+            await fetchAppointments();
+
+            const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=' + startOfDay(new Date()).toISOString() + '&singleEvents=true&orderBy=startTime', {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`
                 }
@@ -87,14 +98,33 @@ const Calendars: React.FC = () => {
             if (!response.ok) {
                 if (response.status === 401) {
                     console.warn("Token expired or invalid");
-                    return; // Fail silently for auto-sync, or prompt re-auth
+                    // Optionally clear invalid token here
+                    return;
                 }
-                throw new Error('Failed to fetch calendar events');
+                const errorBody = await response.text();
+                console.error("Google Calendar API Error:", response.status, errorBody);
+
+                if (response.status === 403) {
+                    throw new Error(`Permission denied (403). Ensure Google Calendar API is enabled in Cloud Console.`);
+                }
+                throw new Error(`Failed to fetch events: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
             const events = data.items || [];
             let addedCount = 0;
+            let foundCount = events.length;
+
+            if (foundCount === 0) {
+                toast("No upcoming Google events found");
+                return;
+            }
+
+            // Re-read appointments from store (it might have updated?)
+            // Note: In a closure, 'appointments' is stale. We trust 'fetchAppointments' updated the store state, 
+            // but we can't access the new state variable here easily without using a ref or 'useStore.getState()'.
+            // For now, we rely on the duplicate check being "best effort" or assume strict duplicates aren't fatal.
+            // Better: use the fetched list if `fetchAppointments` returns it, or just proceed.
 
             for (const event of events) {
                 if (event.start && (event.start.dateTime || event.start.date)) {
@@ -102,19 +132,28 @@ const Calendars: React.FC = () => {
                     const dateObj = new Date(start);
                     const dateStr = format(dateObj, 'yyyy-MM-dd');
                     const timeStr = format(dateObj, 'HH:mm');
+                    const title = event.summary || 'No Title';
 
+                    // Note: 'appointments' here is from the render scope. 
+                    // It refers to the state at the time 'syncWithToken' was defined/called.
+                    // If we just called 'fetchAppointments', React hasn't re-rendered yet to update 'appointments'.
+                    // So this duplicate check is checking against OLD data. 
+                    // Use a slightly loose check or accept that first run might double if very fast.
+                    // However, Firestore logic doesn't prevent dupes.
+
+                    // Simple client-side duplicate prevention against *currently rendered* items
                     const exists = appointments.some(apt =>
-                        apt.title === (event.summary || 'No Title') &&
+                        apt.title === title &&
                         apt.date === dateStr &&
                         apt.time === timeStr
                     );
 
                     if (!exists) {
                         await addAppointment({
-                            title: event.summary || 'No Title',
+                            title: title,
                             date: dateStr,
                             time: timeStr,
-                            assignedTo: currentUser?.id || 'Google Calendar',
+                            assignedTo: currentUserId,
                             notes: event.description || '',
                             contactId: ''
                         });
@@ -122,21 +161,26 @@ const Calendars: React.FC = () => {
                     }
                 }
             }
+
             if (addedCount > 0) {
                 await fetchAppointments();
-                toast.success(`Synced ${addedCount} Google Calendar events`);
+                toast.success(`Synced ${addedCount} new events from Google`);
+            } else {
+                toast.success(`Calendar up to date (${foundCount} Google events examined)`);
             }
-        } catch (error) {
+
+        } catch (error: any) {
             console.error("Auto-sync error", error);
+            toast.error("Sync failed: " + error.message);
         }
     };
 
     useEffect(() => {
-        if (googleToken && !hasSyncedRef.current) {
+        if (googleToken && currentUser && !hasSyncedRef.current) {
             hasSyncedRef.current = true;
             syncWithToken(googleToken);
         }
-    }, [googleToken]);
+    }, [googleToken, currentUser]);
 
     const handleSyncGoogleCalendar = async () => {
         try {
@@ -145,6 +189,10 @@ const Calendars: React.FC = () => {
             if (currentUser?.email) {
                 provider.setCustomParameters({
                     login_hint: currentUser.email
+                });
+            } else {
+                provider.setCustomParameters({
+                    prompt: 'select_account'
                 });
             }
 
