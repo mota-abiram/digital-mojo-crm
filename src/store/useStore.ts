@@ -290,6 +290,10 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchAppointments: async () => {
         const userId = get().currentUser?.id;
+        if (!userId) {
+            set({ appointments: [] });
+            return;
+        }
         const appointments = await api.appointments.getAll(userId);
         set({ appointments });
     },

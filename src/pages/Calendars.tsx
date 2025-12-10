@@ -44,9 +44,11 @@ const Calendars: React.FC = () => {
     });
 
     useEffect(() => {
-        fetchAppointments();
-        fetchContacts();
-    }, [fetchAppointments, fetchContacts]);
+        if (currentUser) {
+            fetchAppointments();
+            fetchContacts();
+        }
+    }, [fetchAppointments, fetchContacts, currentUser]);
 
     // Calendar Logic
     const weekStart = startOfWeek(currentDate);
