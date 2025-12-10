@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import { Search, Plus, Filter, Download, Edit, Trash2, X, MoreHorizontal, ChevronDown, CheckSquare } from 'lucide-react';
 import { Contact } from '../types';
 import { useStore } from '../store/useStore';
@@ -9,7 +10,7 @@ import { COUNTRY_CODES } from '../utils/countryCodes';
 
 const Contacts: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { contacts, fetchContacts, fetchContact, searchContacts, addContact, updateContact, deleteContact, bulkDeleteContacts, bulkAddTagsToContacts, isLoading, currentUser, hasMoreContacts, loadMoreContacts } = useStore();
+    const { contacts, fetchContacts, fetchContact, searchContacts, addContact, updateContact, deleteContact, bulkDeleteContacts, isLoading, currentUser, hasMoreContacts, loadMoreContacts, addOpportunity } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const { id } = useParams();
@@ -31,7 +32,7 @@ const Contacts: React.FC = () => {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, searchContacts, fetchContacts]);
+    }, [searchTerm, searchContacts, fetchContacts, currentUser]);
 
     // Form state
     const [countryCode, setCountryCode] = useState('+1');
@@ -39,8 +40,12 @@ const Contacts: React.FC = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        type: 'Lead',
-        tags: ''
+        companyName: '',
+        type: '',
+
+        Value: 'Standard',
+        status: 'Active',
+        notes: ''
     });
 
     // Initial fetch handled by search effect when term is empty, but we need to ensure it runs on mount if empty
@@ -76,8 +81,9 @@ const Contacts: React.FC = () => {
         // const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         //     contact.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === 'All' || contact.type === filterType;
-        const matchesTag = !filterTag || contact.tags.some(t => t.toLowerCase().includes(filterTag.toLowerCase()));
-        return matchesType && matchesTag;
+
+        const matchesValue = !filterTag || contact.Value === filterTag; // repurposed filterTag for Value temporarily or just ignore
+        return matchesType; // Simplification: Removing tag filter logic for now as 'tags' array is gone.
     });
 
     const handleOpenModal = (contact?: Contact) => {
@@ -97,14 +103,18 @@ const Contacts: React.FC = () => {
             setFormData({
                 name: contact.name,
                 email: contact.email,
-                type: contact.type,
-                tags: contact.tags.join(', ')
+                companyName: contact.companyName || '',
+                type: contact.type || '',
+
+                Value: contact.Value || 'Standard',
+                status: contact.status || 'Active',
+                notes: contact.notes || ''
             });
         } else {
             setEditingId(null);
             setCountryCode('+1');
             setLocalPhone('');
-            setFormData({ name: '', email: '', type: 'Lead', tags: '' });
+            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '' });
         }
         setIsModalOpen(true);
     };
@@ -119,8 +129,12 @@ const Contacts: React.FC = () => {
             name: formData.name,
             email: formData.email,
             phone: countryCode + localPhone,
-            type: formData.type as 'Lead' | 'Customer' | 'Prospect' | 'High-Value',
-            tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+            companyName: formData.companyName,
+            type: formData.type as Contact['type'],
+
+            Value: (formData.Value || 'Standard') as 'Standard' | 'Mid' | 'High',
+            status: formData.status,
+            notes: formData.notes,
             owner: currentUser?.id || 'Unknown'
         };
 
@@ -129,11 +143,34 @@ const Contacts: React.FC = () => {
                 await updateContact(editingId, contactData);
                 toast.success('Contact updated successfully');
             } else {
-                await addContact(contactData);
+                const newContact = await addContact(contactData);
                 toast.success('Contact created successfully');
+
+                try {
+                    // Auto-create Opportunity
+                    await addOpportunity({
+                        name: contactData.companyName || `${contactData.name}'s Opportunity`,
+                        value: 0,
+                        stage: '0', // Assuming '0' is the ID for "0 - Junk" or first stage. Adjust if needed or fetch dynamic.
+                        status: 'Open',
+                        owner: currentUser?.id || 'Unknown',
+                        contactId: newContact.id,
+                        contactName: newContact.name,
+                        contactEmail: newContact.email,
+                        contactPhone: newContact.phone,
+                        companyName: contactData.companyName,
+                        source: 'Contact Creation',
+                        pipelineId: 'Marketing Pipeline',
+                        tags: [],
+                    } as any);
+                    toast.success('Linked opportunity created');
+                } catch (oppErr) {
+                    console.error("Failed to auto-create opportunity", oppErr);
+                }
             }
             setIsModalOpen(false);
-            setFormData({ name: '', email: '', type: 'Lead', tags: '' });
+
+            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '' });
             setCountryCode('+1');
             setLocalPhone('');
         } catch (error: any) {
@@ -191,18 +228,118 @@ const Contacts: React.FC = () => {
         }
     };
 
-    const handleBulkAddTags = async () => {
-        if (!bulkTags) return;
-        const tags = bulkTags.split(',').map(t => t.trim()).filter(t => t);
-        try {
-            await bulkAddTagsToContacts(Array.from(selectedIds), tags);
-            toast.success('Tags added successfully');
-            setIsBulkTagModalOpen(false);
-            setBulkTags('');
-            setSelectedIds(new Set());
-        } catch (error) {
-            toast.error('Failed to add tags');
-        }
+
+
+    // Import Handler
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const rows = results.data as any[];
+                let successCount = 0;
+                let errorCount = 0;
+                const toastId = toast.loading('Importing contacts...');
+
+                console.log('Parsed CSV rows:', rows);
+
+                for (const row of rows) {
+                    try {
+                        // Skip completely empty rows if any slipped through
+                        if (Object.values(row).every(x => !x)) continue;
+
+                        // Normalize keys to lowercase for flexible matching
+                        const normalizedRow: any = {};
+                        Object.keys(row).forEach(key => {
+                            normalizedRow[key.toLowerCase().trim()] = row[key];
+                        });
+
+                        const name = normalizedRow['name'] || normalizedRow['contact name'] || normalizedRow['first name'];
+                        const email = normalizedRow['email'] || normalizedRow['email address'];
+
+                        if (!name && !email) {
+                            console.warn('Skipping row due to missing name/email', row);
+                            errorCount++;
+                            continue;
+                        }
+
+                        const contactData: any = {
+                            name: name || 'Unknown',
+                            email: email || '',
+                            phone: normalizedRow['phone'] || normalizedRow['phone number'] || normalizedRow['mobile'] || '',
+                            companyName: normalizedRow['opportunity name'] || normalizedRow['opportunity'] || normalizedRow['company name'] || normalizedRow['company'] || '',
+                            type: (normalizedRow['type'] || '') as any, // Default to empty if invalid/missing
+                            Value: (normalizedRow['value'] || 'Standard') as any,
+                            status: normalizedRow['status'] || 'Active',
+                            notes: normalizedRow['notes'] || normalizedRow['description'] || '',
+                            owner: currentUser?.id || 'Unknown'
+                        };
+
+                        // Basic Type validation/mapped fallback
+                        const validTypes = ['Branding', 'Performance', 'Creative', '360'];
+                        if (!validTypes.includes(contactData.type)) {
+                            // Try to match partial or default
+                            const found = validTypes.find(t => t.toLowerCase() === contactData.type.toLowerCase());
+                            contactData.type = found || '';
+                        }
+
+                        // Basic Value validation
+                        const validValues = ['Standard', 'Mid', 'High'];
+                        if (!validValues.includes(contactData.Value)) {
+                            contactData.Value = 'Standard';
+                        }
+
+                        try {
+                            const newContact = await addContact(contactData);
+                            successCount++;
+
+                            // Auto-create Opportunity for imported contact
+                            await addOpportunity({
+                                name: contactData.companyName || `${contactData.name}'s Opportunity`,
+                                value: 0,
+                                stage: '0',
+                                status: 'Open',
+                                owner: currentUser?.id || 'Unknown',
+                                contactId: newContact.id,
+                                contactName: newContact.name,
+                                contactEmail: newContact.email,
+                                contactPhone: newContact.phone,
+                                companyName: contactData.companyName,
+                                source: 'Contact Import',
+                                pipelineId: 'Marketing Pipeline',
+                                tags: [],
+                            } as any);
+
+                        } catch (e) {
+                            console.error("Failed to add contact or create opportunity", e);
+                            errorCount++;
+                        }
+                    } catch (err) {
+                        console.error("Error processing row:", row, err);
+                        errorCount++;
+                    }
+                }
+
+                toast.dismiss(toastId);
+                if (successCount > 0) {
+                    toast.success(`Successfully imported ${successCount} contacts`);
+                }
+                if (errorCount > 0) {
+                    toast.error(`Failed to import ${errorCount} contacts`);
+                }
+
+                event.target.value = ''; // Reset input
+            },
+            error: (error) => {
+                toast.error('Failed to parse CSV file');
+                console.error(error);
+            }
+        });
     };
 
     return (
@@ -211,7 +348,19 @@ const Contacts: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 mb-8 shrink-0">
                 <h1 className="text-3xl font-bold text-gray-900">Contacts</h1>
                 <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm">Import</button>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
+                    >
+                        Import
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImport}
+                        accept=".csv"
+                        className="hidden"
+                    />
                     <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm">Export</button>
                     <button
                         onClick={() => handleOpenModal()}
@@ -227,12 +376,7 @@ const Contacts: React.FC = () => {
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
                     <span className="text-sm font-medium text-blue-800">{selectedIds.size} contacts selected</span>
                     <div className="flex gap-2">
-                        <button
-                            onClick={() => setIsBulkTagModalOpen(true)}
-                            className="px-3 py-1.5 bg-white border border-blue-300 text-blue-700 rounded text-sm font-medium hover:bg-blue-50"
-                        >
-                            Add Tags
-                        </button>
+
                         <button
                             onClick={handleBulkDelete}
                             className="px-3 py-1.5 bg-white border border-red-300 text-red-700 rounded text-sm font-medium hover:bg-red-50"
@@ -287,10 +431,11 @@ const Contacts: React.FC = () => {
                                     className="p-2 border border-gray-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary"
                                 >
                                     <option value="All">All Types</option>
-                                    <option value="Lead">Lead</option>
-                                    <option value="Customer">Customer</option>
-                                    <option value="Prospect">Prospect</option>
-                                    <option value="High-Value">High-Value</option>
+                                    <option value="">None</option>
+                                    <option value="Branding">Branding</option>
+                                    <option value="Performance">Performance</option>
+                                    <option value="Creative">Creative</option>
+                                    <option value="360">360</option>
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1">
@@ -331,14 +476,18 @@ const Contacts: React.FC = () => {
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Name</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
+
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Company</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Type</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tags</th>
+
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredContacts.length === 0 ? (
-                                <tr><td colSpan={7} className="p-8 text-center text-gray-500">No contacts found.</td></tr>
+                                <tr><td colSpan={8} className="p-8 text-center text-gray-500">No contacts found.</td></tr>
                             ) : (
                                 <>
                                     {filteredContacts.map((contact) => (
@@ -360,21 +509,31 @@ const Contacts: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="p-4 text-sm text-gray-600">{contact.email}</td>
+
                                             <td className="p-4 text-sm text-gray-600">{contact.phone}</td>
+                                            <td className="p-4 text-sm text-gray-600">{contact.companyName || '-'}</td>
                                             <td className="p-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${contact.type === 'Customer' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                    contact.type === 'Lead' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${contact.type === 'Performance' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                    contact.type === 'Creative' ? 'bg-blue-50 text-blue-700 border-blue-100' :
                                                         'bg-gray-50 text-gray-700 border-gray-100'
                                                     }`}>
                                                     {contact.type}
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                <div className="flex gap-1 flex-wrap">
-                                                    {contact.tags.map(tag => (
-                                                        <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded border border-gray-200">{tag}</span>
-                                                    ))}
-                                                </div>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full border ${contact.Value === 'High' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                    contact.Value === 'Mid' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                                        'bg-gray-50 text-gray-700 border-gray-100'
+                                                    }`}>
+                                                    {contact.Value}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full border ${contact.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                    'bg-gray-50 text-gray-700 border-gray-100'
+                                                    }`}>
+                                                    {contact.status || 'Active'}
+                                                </span>
                                             </td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -398,7 +557,7 @@ const Contacts: React.FC = () => {
                                     ))}
                                     {hasMoreContacts && !searchTerm && filterType === 'All' && !filterTag && (
                                         <tr>
-                                            <td colSpan={7} className="p-4 text-center">
+                                            <td colSpan={8} className="p-4 text-center">
                                                 <button
                                                     onClick={() => loadMoreContacts()}
                                                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
@@ -416,38 +575,7 @@ const Contacts: React.FC = () => {
             </div>
 
             {/* Bulk Tag Modal */}
-            <Modal
-                isOpen={isBulkTagModalOpen}
-                onClose={() => setIsBulkTagModalOpen(false)}
-                title="Add Tags to Selected Contacts"
-            >
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
-                        <input
-                            type="text"
-                            value={bulkTags}
-                            onChange={(e) => setBulkTags(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                            placeholder="Tag1, Tag2, Tag3"
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => setIsBulkTagModalOpen(false)}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleBulkAddTags}
-                            className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90"
-                        >
-                            Add Tags
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+
 
             {/* Contact Modal */}
             <Modal
@@ -501,6 +629,16 @@ const Contacts: React.FC = () => {
                             />
                         </div>
                     </div>
+                    <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-900">Company Name</label>
+                        <input
+                            type="text"
+                            value={formData.companyName}
+                            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
+                            placeholder="Company Ltd."
+                        />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block mb-2 text-sm font-medium text-gray-900">Type</label>
@@ -509,22 +647,50 @@ const Contacts: React.FC = () => {
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
                             >
-                                <option value="Lead">Lead</option>
-                                <option value="Customer">Customer</option>
-                                <option value="Prospect">Prospect</option>
-                                <option value="High-Value">High-Value</option>
+                                <option value="">Select Type</option>
+                                <option value="Branding">Branding</option>
+                                <option value="Performance">Performance</option>
+                                <option value="Creative">Creative</option>
+                                <option value="360">360</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-900">Tags</label>
-                            <input
-                                type="text"
-                                value={formData.tags}
-                                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Value</label>
+                            <select
+                                value={formData.Value}
+                                onChange={(e) => setFormData({ ...formData, Value: e.target.value })}
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
-                                placeholder="Tag1, Tag2"
-                            />
+                            >
+                                <option value="Standard">Standard</option>
+                                <option value="Mid">Mid</option>
+                                <option value="High">High</option>
+                            </select>
                         </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-900">Status</label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
+                            >
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Do Not Contact">Do Not Contact</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-900">Notes</label>
+                        <textarea
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
+                            placeholder="Add notes about this contact..."
+                            rows={3}
+                        />
                     </div>
                     <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                         <button

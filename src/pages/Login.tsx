@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
@@ -36,10 +37,21 @@ const Login: React.FC = () => {
         }
     };
 
+    const { setGoogleToken } = useStore();
+
     const handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+
+            if (token) {
+                setGoogleToken(token);
+            }
+
             toast.success('Logged in successfully');
             navigate('/dashboard');
         } catch (error: any) {

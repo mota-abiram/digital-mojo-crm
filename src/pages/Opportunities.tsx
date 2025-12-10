@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import { Plus, MoreHorizontal, X, Edit, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Calendar, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, FileText } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
@@ -49,8 +50,19 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                         </span>
                     )}
                 </div>
-                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 border border-gray-200">
-                    {item.owner ? item.owner.charAt(0).toUpperCase() : <User size={12} />}
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 border border-gray-200">
+                        {item.owner ? item.owner.charAt(0).toUpperCase() : <User size={12} />}
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(item);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
+                    >
+                        <MoreHorizontal size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -121,7 +133,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
 };
 
 const Opportunities: React.FC = () => {
-    const { opportunities, stages, fetchOpportunities, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities } = useStore();
+    const { opportunities, stages, fetchOpportunities, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
@@ -141,7 +153,10 @@ const Opportunities: React.FC = () => {
         contactEmail: '',
         contactPhone: '',
         companyName: '',
-        tags: ''
+
+        tags: '',
+        pipelineId: 'Marketing Pipeline',
+        contactValue: 'Standard'
     });
 
     // Sub-items State
@@ -165,7 +180,7 @@ const Opportunities: React.FC = () => {
     useEffect(() => {
         fetchOpportunities();
         fetchContacts();
-    }, [fetchOpportunities, fetchContacts]);
+    }, [fetchOpportunities, fetchContacts, currentUser]);
 
     useEffect(() => {
         setTempStages(stages);
@@ -225,6 +240,7 @@ const Opportunities: React.FC = () => {
     const handleOpenModal = (opp?: Opportunity) => {
         if (opp) {
             setEditingId(opp.id);
+            const linkedContact = contacts.find(c => c.id === opp.contactId);
             setFormData({
                 name: opp.name,
                 value: opp.value.toString(),
@@ -232,28 +248,21 @@ const Opportunities: React.FC = () => {
                 status: opp.status,
                 owner: opp.owner || '',
                 source: opp.source || '',
-                contactName: opp.contactName || '',
-                contactEmail: opp.contactEmail || '',
-                contactPhone: opp.contactPhone || '',
-                companyName: opp.companyName || '',
-                tags: opp.tags.join(', ')
+                contactName: linkedContact?.name || opp.contactName || '',
+                contactEmail: linkedContact?.email || opp.contactEmail || '',
+                contactPhone: linkedContact?.phone || opp.contactPhone || '',
+                companyName: linkedContact?.companyName || opp.companyName || '',
+                tags: opp.tags ? opp.tags.join(', ') : '',
+                pipelineId: opp.pipelineId || 'Marketing Pipeline',
+                contactValue: linkedContact?.Value || 'Standard'
             });
             setTasks(opp.tasks || []);
             setNotes(opp.notes || []);
         } else {
             setEditingId(null);
             setFormData({
-                name: '',
-                value: '0',
-                stage: stages[0]?.id || 'New',
-                status: 'Open',
-                owner: currentUser?.id || '',
-                source: '',
-                contactName: '',
-                contactEmail: '',
-                contactPhone: '',
-                companyName: '',
-                tags: ''
+                name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', owner: currentUser?.id || '', source: '',
+                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', pipelineId: 'Marketing Pipeline', contactValue: 'Standard'
             });
             setTasks([]);
             setNotes([]);
@@ -285,6 +294,19 @@ const Opportunities: React.FC = () => {
 
             if (existingContact) {
                 finalContactId = existingContact.id;
+                // Update existing contact's value if it changed
+                // Sync Contact Info if changed
+                const updates: any = {};
+                if (existingContact.Value !== formData.contactValue) updates.Value = formData.contactValue;
+                if (existingContact.phone !== formData.contactPhone) updates.phone = formData.contactPhone;
+                if (existingContact.email !== formData.contactEmail) updates.email = formData.contactEmail;
+                if (existingContact.companyName !== formData.companyName) updates.companyName = formData.companyName;
+                if (existingContact.name !== formData.contactName) updates.name = formData.contactName;
+
+                if (Object.keys(updates).length > 0) {
+                    await updateContact(existingContact.id, updates);
+                    toast.success("Linked contact updated");
+                }
             } else {
                 // 2. Create new contact
                 try {
@@ -292,9 +314,11 @@ const Opportunities: React.FC = () => {
                         name: formData.contactName,
                         email: formData.contactEmail || '',
                         phone: formData.contactPhone || '',
-                        type: 'Lead',
+                        type: '',
+                        companyName: formData.name,
                         owner: currentUser?.id || 'Unknown',
-                        tags: []
+                        tags: [],
+                        Value: formData.contactValue
                     });
                     finalContactId = newContact.id;
                     toast.success(`New contact "${newContact.name}" created`);
@@ -317,6 +341,7 @@ const Opportunities: React.FC = () => {
             contactPhone: formData.contactPhone,
             companyName: formData.companyName,
             contactId: finalContactId,
+            pipelineId: formData.pipelineId,
             tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
             updatedAt: new Date().toISOString(),
             tasks: tasks,
@@ -435,6 +460,131 @@ const Opportunities: React.FC = () => {
         setTempStages(newStages);
     };
 
+    // Import Handler
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const rows = results.data as any[];
+                let successCount = 0;
+                let errorCount = 0;
+                const toastId = toast.loading('Importing opportunities...');
+
+                for (const row of rows) {
+                    try {
+                        if (Object.values(row).every(x => !x)) continue;
+
+                        const normalizedRow: any = {};
+                        Object.keys(row).forEach(key => {
+                            normalizedRow[key.toLowerCase().trim()] = row[key];
+                        });
+
+                        const name = normalizedRow['opportunity name'] || normalizedRow['opportunity'] || normalizedRow['name'] || normalizedRow['title'];
+                        if (!name) {
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Extract contact info
+                        const contactName = normalizedRow['contact name'] || normalizedRow['contact'];
+                        const contactEmail = normalizedRow['email'] || normalizedRow['contact email'];
+                        const contactPhone = normalizedRow['phone'] || normalizedRow['contact phone'];
+                        const contactValue = normalizedRow['contact value'] || 'Standard';
+
+                        let finalContactId: string | undefined = undefined;
+
+                        // Try to link or create contact
+                        if (contactName || contactEmail) {
+                            const existingContact = contacts.find(c =>
+                                (contactEmail && c.email === contactEmail) ||
+                                (contactName && c.name.toLowerCase() === contactName.toLowerCase())
+                            );
+
+                            if (existingContact) {
+                                finalContactId = existingContact.id;
+                                // Sync Data for imported contacts
+                                const updates: any = {};
+                                if (contactValue && existingContact.Value !== contactValue) updates.Value = contactValue;
+                                if (contactPhone && existingContact.phone !== contactPhone) updates.phone = contactPhone;
+
+                                // Mapping Opportunity Name to Company Name
+                                if (name && existingContact.companyName !== name) updates.companyName = name;
+
+                                if (Object.keys(updates).length > 0) {
+                                    await updateContact(existingContact.id, updates);
+                                }
+                            } else if (contactName) {
+                                // Create new contact if not found
+                                try {
+                                    const newContact = await addContact({
+                                        name: contactName,
+                                        email: contactEmail || '',
+                                        phone: contactPhone || '',
+                                        type: '',
+                                        companyName: name,
+                                        owner: currentUser?.id || 'Unknown',
+                                        Value: contactValue
+                                    });
+                                    finalContactId = newContact.id;
+                                } catch (e) {
+                                    console.error("Failed to create simple contact during import", e);
+                                }
+                            }
+                        }
+
+                        // Determine Stage
+                        const stageName = normalizedRow['stage'];
+                        let validStageId = stages[0]?.id || 'New';
+                        if (stageName) {
+                            const foundStage = stages.find(s => s.title.toLowerCase() === stageName.toLowerCase() || s.id === stageName);
+                            if (foundStage) validStageId = foundStage.id;
+                        }
+
+                        const oppData: any = {
+                            name: name,
+                            value: Number(normalizedRow['value'] || 0),
+                            stage: validStageId,
+                            status: (normalizedRow['status'] || 'Open'),
+                            owner: currentUser?.id || 'Unknown',
+                            source: normalizedRow['source'] || '',
+                            contactName: contactName || '',
+                            contactEmail: contactEmail || '',
+                            contactPhone: contactPhone || '',
+                            companyName: normalizedRow['company name'] || normalizedRow['company'] || '',
+                            contactId: finalContactId,
+                            pipelineId: normalizedRow['pipeline'] || 'Marketing Pipeline',
+                            tags: normalizedRow['tags'] ? normalizedRow['tags'].split(',').map((t: string) => t.trim()) : [],
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+
+                        await addOpportunity(oppData);
+                        successCount++;
+                    } catch (err) {
+                        console.error("Error importing row:", row, err);
+                        errorCount++;
+                    }
+                }
+
+                toast.dismiss(toastId);
+                if (successCount > 0) toast.success(`Successfully imported ${successCount} opportunities`);
+                if (errorCount > 0) toast.error(`Failed to import ${errorCount} opportunities`);
+
+                event.target.value = '';
+            },
+            error: (error) => {
+                toast.error('Failed to parse CSV file');
+                console.error(error);
+            }
+        });
+    };
+
     return (
         <div className="p-8 h-full flex flex-col bg-gray-50">
             {/* Header */}
@@ -464,6 +614,19 @@ const Opportunities: React.FC = () => {
                         >
                             Pipelines
                         </button>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
+                        >
+                            Import
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImport}
+                            accept=".csv"
+                            className="hidden"
+                        />
                         <button
                             onClick={() => handleOpenModal()}
                             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
@@ -556,8 +719,12 @@ const Opportunities: React.FC = () => {
                                         </th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity Name</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Contact</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Pipeline</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Owner</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tags</th>
@@ -576,7 +743,7 @@ const Opportunities: React.FC = () => {
                                                     className="rounded border-gray-300 text-primary focus:ring-primary"
                                                 />
                                             </td>
-                                            <td className="p-4 font-medium text-primary">{opp.name}</td>
+                                            <td className="p-4 font-medium text-primary">{opp.companyName || opp.name}</td>
                                             <td className="p-4">
                                                 {opp.contactName ? (
                                                     <div className="flex items-center gap-2">
@@ -587,12 +754,18 @@ const Opportunities: React.FC = () => {
                                                     </div>
                                                 ) : <span className="text-gray-400 text-sm">-</span>}
                                             </td>
+                                            <td className="p-4 text-sm text-gray-600">{opp.contactPhone || '-'}</td>
+                                            <td className="p-4 text-sm text-gray-600">{opp.contactEmail || '-'}</td>
+                                            <td className="p-4 text-sm text-gray-600">{opp.pipelineId || '-'}</td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium border border-gray-200">
                                                     {stages.find(s => s.id === opp.stage)?.title || opp.stage}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-sm text-gray-700">₹{Number(opp.value).toLocaleString()}</td>
+                                            <td className="p-4 text-sm text-gray-500 max-w-[200px] truncate" title={opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : ''}>
+                                                {opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : '-'}
+                                            </td>
                                             <td className="p-4">
                                                 <span className={`uppercase text-xs font-bold ${opp.status === 'Open' ? 'text-green-600' : 'text-gray-500'}`}>
                                                     {opp.status}
@@ -683,7 +856,7 @@ const Opportunities: React.FC = () => {
                                                         Contact details <User size={18} className="text-gray-400" />
                                                     </h3>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-6">
+                                                <div className="space-y-6">
                                                     <div className="relative">
                                                         <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                         <input
@@ -694,34 +867,51 @@ const Opportunities: React.FC = () => {
                                                             className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
                                                         />
                                                     </div>
-                                                    <div className="relative">
-                                                        <Mail className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                        <input
-                                                            type="email"
-                                                            placeholder="Email"
-                                                            value={formData.contactEmail}
-                                                            onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-                                                            className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div className="relative">
+                                                            <Mail className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                            <input
+                                                                type="email"
+                                                                placeholder="Email Address"
+                                                                value={formData.contactEmail}
+                                                                onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                            />
+                                                        </div>
+                                                        <div className="relative">
+                                                            <Phone className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                            <input
+                                                                type="tel"
+                                                                placeholder="Phone Number"
+                                                                value={formData.contactPhone}
+                                                                onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
+                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="relative">
-                                                        <Phone className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                        <input
-                                                            type="tel"
-                                                            placeholder="Phone"
-                                                            value={formData.contactPhone}
-                                                            onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
-                                                            className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
-                                                    </div>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Company Name"
-                                                            value={formData.companyName}
-                                                            onChange={e => setFormData({ ...formData, companyName: e.target.value })}
-                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Contact Value</label>
+                                                            <select
+                                                                value={formData.contactValue}
+                                                                onChange={e => setFormData({ ...formData, contactValue: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                            >
+                                                                <option value="Standard">Standard</option>
+                                                                <option value="Mid">Mid</option>
+                                                                <option value="High">High</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Company Name</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Company Name"
+                                                                value={formData.companyName}
+                                                                onChange={e => setFormData({ ...formData, companyName: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </section>
@@ -745,8 +935,13 @@ const Opportunities: React.FC = () => {
                                                     <div className="grid grid-cols-2 gap-6">
                                                         <div>
                                                             <label className="block mb-1.5 text-sm font-medium text-gray-700">Pipeline</label>
-                                                            <select className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
-                                                                <option>Marketing Pipeline</option>
+                                                            <select
+                                                                value={formData.pipelineId}
+                                                                onChange={(e) => setFormData({ ...formData, pipelineId: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                            >
+                                                                <option value="Marketing Pipeline">Marketing Pipeline</option>
+                                                                <option value="Sales Pipeline">Sales Pipeline</option>
                                                             </select>
                                                         </div>
                                                         <div>
@@ -824,6 +1019,53 @@ const Opportunities: React.FC = () => {
                                                                 onChange={e => setFormData({ ...formData, tags: e.target.value })}
                                                                 className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
                                                             />
+                                                        </div>
+                                                    </div>
+
+                                                    <hr className="border-gray-200" />
+
+                                                    <div>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <label className="block text-sm font-medium text-gray-700">Notes</label>
+                                                            <button
+                                                                onClick={() => setIsAddingNote(true)}
+                                                                className="text-xs text-primary font-medium hover:underline"
+                                                            >
+                                                                + Add Note
+                                                            </button>
+                                                        </div>
+
+                                                        {isAddingNote && (
+                                                            <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                                <textarea
+                                                                    placeholder="Write a note..."
+                                                                    value={newNoteContent}
+                                                                    onChange={e => setNewNoteContent(e.target.value)}
+                                                                    className="w-full p-2 bg-white border border-gray-300 rounded text-sm focus:ring-primary focus:border-primary mb-2 min-h-[80px]"
+                                                                />
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
+                                                                    <button onClick={handleAddNote} className="px-2 py-1 text-xs text-white bg-primary rounded hover:bg-primary/90">Save</button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                                            {notes.length === 0 && !isAddingNote ? (
+                                                                <p className="text-sm text-gray-400 italic">No notes yet.</p>
+                                                            ) : (
+                                                                notes.map(note => (
+                                                                    <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
+                                                                        <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
+                                                                        <div className="flex justify-between items-center text-xs text-gray-500">
+                                                                            <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
+                                                                            <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <Trash2 size={12} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1176,278 +1418,7 @@ const Opportunities: React.FC = () => {
             )
             }
 
-            {/* Opportunity Modal */}
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={editingId ? 'Edit Opportunity' : 'New Opportunity'}
-                size="full"
-                noPadding={true}
-                footer={
-                    <div className="flex justify-between items-center w-full">
-                        <div className="text-xs text-gray-500">
-                            {editingId && (
-                                <>
-                                    <p>Created By: Digital Mojo</p>
-                                    <p>Created on: {format(new Date(), 'MMM d, yyyy h:mm a')} (IST)</p>
-                                    <a href="#" className="text-primary hover:underline flex items-center gap-1 mt-1">
-                                        Audit Logs: {editingId} <Download size={12} />
-                                    </a>
-                                </>
-                            )}
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                                disabled={isSubmitting}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    editingId ? 'Update' : 'Create'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                }
-            >
-                <div className="flex h-full min-h-[500px]">
-                    {/* Sidebar */}
-                    <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-                        {['Contact Info', 'Opportunity Info', 'Tasks', 'Notes', 'Appointment', 'Documents'].map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`w-full text-left px-6 py-4 text-sm font-medium border-l-4 transition-colors ${activeTab === tab ? 'bg-white border-primary text-primary' : 'border-transparent text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
 
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-8">
-                        {activeTab === 'Contact Info' && (
-                            <section className="space-y-6 animate-in fade-in duration-300">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">Contact Information</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                                        <div className="relative">
-                                            <User className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                                            <input
-                                                type="text"
-                                                value={formData.contactName}
-                                                onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                                                className="pl-9 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                                placeholder="John Doe"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                                            <input
-                                                type="email"
-                                                value={formData.contactEmail}
-                                                onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                                                className="pl-9 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                                placeholder="john@example.com"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                                            <input
-                                                type="tel"
-                                                value={formData.contactPhone}
-                                                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                                                className="pl-9 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                                placeholder="+1 234 567 8900"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                                        <div className="relative">
-                                            <Tag className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                                            <input
-                                                type="text"
-                                                value={formData.tags}
-                                                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                                                className="pl-9 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                                placeholder="Lead, Interested, VIP"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'Opportunity Info' && (
-                            <section className="space-y-6 animate-in fade-in duration-300">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">Opportunity Details</h3>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Opportunity Name</label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Pipeline Stage</label>
-                                        <select
-                                            value={formData.stage}
-                                            onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
-                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                        >
-                                            {stages.map(s => (
-                                                <option key={s.id} value={s.id}>{s.title}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Lead Value</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span className="text-gray-500 sm:text-sm">₹</span>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                value={formData.value}
-                                                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                                                className="pl-7 w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                        >
-                                            <option value="Open">Open</option>
-                                            <option value="Won">Won</option>
-                                            <option value="Lost">Lost</option>
-                                            <option value="Abandoned">Abandoned</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-                                        <input
-                                            type="text"
-                                            value={formData.owner}
-                                            onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-                                        <input
-                                            type="text"
-                                            value={formData.source}
-                                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-                                        />
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'Tasks' && (
-                            <section className="space-y-6 animate-in fade-in duration-300">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">Tasks</h3>
-                                <div className="bg-gray-50 rounded-lg p-6 text-center border border-dashed border-gray-300">
-                                    <div className="flex justify-center mb-4">
-                                        <CheckSquare className="text-gray-300 w-12 h-12" />
-                                    </div>
-                                    <h4 className="text-gray-900 font-medium mb-1">No tasks found</h4>
-                                    <p className="text-gray-500 text-sm mb-4">Get things done by adding a task to this opportunity.</p>
-                                    <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">
-                                        + Add New Task
-                                    </button>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'Notes' && (
-                            <section className="space-y-6 animate-in fade-in duration-300">
-                                <h3 className="text-lg font-bold text-gray-900 border-b border-gray-200 pb-2">Notes</h3>
-                                <div className="space-y-4">
-                                    {isAddingNote ? (
-                                        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
-                                            <textarea
-                                                value={newNoteContent}
-                                                onChange={(e) => setNewNoteContent(e.target.value)}
-                                                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
-                                                rows={3}
-                                                placeholder="Enter note..."
-                                            />
-                                            <div className="mt-3 flex justify-end gap-2">
-                                                <button onClick={() => setIsAddingNote(false)} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-                                                <button onClick={handleAddNote} className="text-sm bg-primary text-white px-3 py-1.5 rounded hover:bg-primary/90">Save Note</button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex justify-between items-center">
-                                            <p className="text-sm text-gray-500">Keep track of important details.</p>
-                                            <button onClick={() => setIsAddingNote(true)} className="text-sm text-primary font-medium hover:underline">+ Add Note</button>
-                                        </div>
-                                    )}
-
-                                    {notes.length === 0 && !isAddingNote ? (
-                                        <div className="bg-gray-50 rounded-lg p-6 text-center border border-dashed border-gray-300">
-                                            <div className="flex justify-center mb-4">
-                                                <FileText className="text-gray-300 w-12 h-12" />
-                                            </div>
-                                            <h4 className="text-gray-900 font-medium mb-1">No notes found</h4>
-                                            <p className="text-gray-500 text-sm mb-4">Your filters does not match any notes. Please try again.</p>
-                                            <button onClick={() => setIsAddingNote(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90">
-                                                + Add Note
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {notes.map(note => (
-                                                <div key={note.id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
-                                                    <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{note.content}</p>
-                                                    <div className="flex justify-between items-center text-xs text-gray-500">
-                                                        <div className="flex items-center gap-1">
-                                                            <Clock size={12} />
-                                                            <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
-                                                        </div>
-                                                        <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600">
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-                        )}
-                    </div>
-                </div>
-            </Modal>
 
             {/* Pipeline Modal */}
             <Modal

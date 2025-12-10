@@ -9,7 +9,6 @@ import { Loader2 } from 'lucide-react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Conversations from './pages/Conversations';
 import Calendars from './pages/Calendars';
 import Contacts from './pages/Contacts';
 import Opportunities from './pages/Opportunities';
@@ -50,7 +49,6 @@ const App: React.FC = () => {
         <Route element={<PrivateRoute />}>
           <Route element={<Layout><Outlet /></Layout>}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/conversations" element={<Conversations />} />
             <Route path="/calendars" element={<Calendars />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/contacts/:id" element={<Contacts />} />

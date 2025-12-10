@@ -26,7 +26,7 @@ interface AppState {
     updateContact: (id: string, contact: Partial<Contact>) => Promise<void>;
     deleteContact: (id: string) => Promise<void>;
     bulkDeleteContacts: (ids: string[]) => Promise<void>;
-    bulkAddTagsToContacts: (ids: string[], tags: string[]) => Promise<void>;
+
 
     stages: { id: string; title: string; color: string }[];
     fetchOpportunities: () => Promise<void>;
@@ -53,6 +53,10 @@ interface AppState {
 
     notifications: Notification[];
     fetchNotifications: () => Promise<void>;
+
+    // Google Integration
+    googleToken: string | null;
+    setGoogleToken: (token: string | null) => void;
 
     initializeListeners: () => void;
 }
@@ -94,17 +98,25 @@ export const useStore = create<AppState>((set, get) => ({
     contacts: [],
     opportunities: [],
     stages: [
-        { id: 'New', title: 'New', color: '#f0bc00' },
-        { id: 'Contacted', title: 'Contacted', color: '#754c9b' },
-        { id: 'Qualified', title: 'Qualified', color: '#06aed7' },
-        { id: 'Proposal', title: 'Proposal', color: '#eb7311' },
-        { id: 'Closed', title: 'Closed', color: '#1ea34f' },
+        { id: '0', title: '0 - Junk', color: '#808080' },
+        { id: '10', title: '10 - Closed', color: '#1ea34f' },
+        { id: '16', title: '16 - Yet to contact', color: '#f0bc00' },
+        { id: '17', title: '17 - Follow Later', color: '#754c9b' },
+        { id: '18', title: '18 - Luke Warm', color: '#ff8c00' },
+        { id: '19', title: '19 - Warm', color: '#ffa500' },
+        { id: '20', title: '20 - Hot', color: '#ff4500' },
+        { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },
+        { id: '21', title: '21 - Cheque Ready', color: '#006400' },
     ],
     updateStages: (stages) => set({ stages }),
     appointments: [],
     conversations: [],
     activeConversationId: null,
     notifications: [],
+
+    googleToken: null,
+    setGoogleToken: (token) => set({ googleToken: token }),
+
     isLoading: false,
     lastContactDoc: null,
     hasMoreContacts: false,
@@ -203,19 +215,7 @@ export const useStore = create<AppState>((set, get) => ({
             contacts: state.contacts.filter((c) => !ids.includes(c.id)),
         }));
     },
-    bulkAddTagsToContacts: async (ids: string[], tags: string[]) => {
-        await api.contacts.bulkAddTags(ids, tags);
-        set((state) => ({
-            contacts: state.contacts.map((c) => {
-                if (ids.includes(c.id)) {
-                    // Avoid duplicates
-                    const newTags = [...new Set([...c.tags, ...tags])];
-                    return { ...c, tags: newTags };
-                }
-                return c;
-            }),
-        }));
-    },
+
 
     lastOpportunityDoc: null,
     hasMoreOpportunities: false,

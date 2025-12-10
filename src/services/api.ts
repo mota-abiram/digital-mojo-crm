@@ -5,16 +5,41 @@ import { Contact, Opportunity, Appointment, Conversation, Message, Notification 
 export const api = {
     contacts: {
         getAll: async (userId?: string, lastDoc?: any, limitCount = 20) => {
-            let q = query(collection(db, 'contacts'), orderBy('createdAt', 'desc'), limit(limitCount));
-            if (userId) {
-                q = query(q, where('owner', '==', userId));
+            try {
+                // Try with full ordering (requires composite index if userId is present)
+                const constraints: any[] = [];
+                if (userId) constraints.push(where('owner', '==', userId));
+                constraints.push(orderBy('createdAt', 'desc'));
+                if (lastDoc) constraints.push(startAfter(lastDoc));
+                constraints.push(limit(limitCount));
+
+                const q = query(collection(db, 'contacts'), ...constraints);
+                const querySnapshot = await getDocs(q);
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contact));
+                return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
+            } catch (error: any) {
+                console.warn("Index query failed, falling back to simple query:", error);
+
+                // Fallback: Query by owner only (no sort), then client-side sort
+                // Note: Pagination ('lastDoc') might behave differently without sort order
+                const constraints: any[] = [];
+                if (userId) constraints.push(where('owner', '==', userId));
+                if (lastDoc) constraints.push(startAfter(lastDoc));
+                constraints.push(limit(limitCount));
+
+                const q = query(collection(db, 'contacts'), ...constraints);
+                const querySnapshot = await getDocs(q);
+                let data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contact));
+
+                // Client-side sort
+                data = data.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0).getTime();
+                    const dateB = new Date(b.createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+
+                return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
             }
-            if (lastDoc) {
-                q = query(q, startAfter(lastDoc));
-            }
-            const querySnapshot = await getDocs(q);
-            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contact));
-            return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
         },
         get: async (id: string) => {
             const docRef = doc(db, 'contacts', id);
@@ -84,21 +109,47 @@ export const api = {
     },
     opportunities: {
         getAll: async (userId?: string, lastDoc?: any, limitCount: number = 20) => {
-            let q = query(collection(db, 'opportunities'), orderBy('createdAt', 'desc'));
+            try {
+                const constraints: any[] = [];
 
-            if (userId) {
-                q = query(collection(db, 'opportunities'), where('owner', '==', userId), orderBy('createdAt', 'desc'));
+                if (userId) {
+                    constraints.push(where('owner', '==', userId));
+                }
+
+                constraints.push(orderBy('createdAt', 'desc'));
+
+                if (lastDoc) {
+                    constraints.push(startAfter(lastDoc));
+                }
+
+                constraints.push(limit(limitCount));
+
+                const q = query(collection(db, 'opportunities'), ...constraints);
+
+                const querySnapshot = await getDocs(q);
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+                return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
+            } catch (error) {
+                console.warn("Index query failed for opportunities, falling back:", error);
+
+                const constraints: any[] = [];
+                if (userId) constraints.push(where('owner', '==', userId));
+                if (lastDoc) constraints.push(startAfter(lastDoc));
+                constraints.push(limit(limitCount));
+
+                const q = query(collection(db, 'opportunities'), ...constraints);
+                const querySnapshot = await getDocs(q);
+                let data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+
+                // Client-side sort
+                data = data.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0).getTime();
+                    const dateB = new Date(b.createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+
+                return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
             }
-
-            if (lastDoc) {
-                q = query(q, startAfter(lastDoc));
-            }
-
-            q = query(q, limit(limitCount));
-
-            const querySnapshot = await getDocs(q);
-            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
-            return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
         },
         subscribe: (callback: (data: Opportunity[]) => void, userId?: string) => {
             let q = query(collection(db, 'opportunities'));

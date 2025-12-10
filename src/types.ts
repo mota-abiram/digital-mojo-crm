@@ -10,9 +10,12 @@ export interface Contact {
   name: string;
   email: string;
   phone: string;
-  tags: string[];
+  Value: 'Standard' | 'Mid' | 'High';
   owner: string;
-  type: 'Lead' | 'Customer' | 'Prospect' | 'High-Value';
+  companyName?: string;
+  type?: 'Branding' | 'Performance' | 'Creative' | '360' | '';
+  status?: string;
+  notes?: string;
   createdAt?: string;
 }
 
