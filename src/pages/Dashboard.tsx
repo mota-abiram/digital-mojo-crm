@@ -26,16 +26,29 @@ const Dashboard: React.FC = () => {
 
   // Calculate Stats
   const totalPipelineValue = opportunities.reduce((sum, opp) => sum + Number(opp.value), 0);
-  const wonOpportunities = opportunities.filter(opp => opp.stage === 'Closed' || opp.status === 'Won').length;
+
+  // Strict check for 'Won' status. 
+  // If 'Closed' stage (ID 10) implies Won, we should ensure the dragging logic sets status='Won'.
+  // Here we assume status is the source of truth.
+  const wonOpportunities = opportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
   const totalOpportunities = opportunities.length;
   const conversionRate = totalOpportunities > 0 ? ((wonOpportunities / totalOpportunities) * 100).toFixed(1) : '0';
 
-  // Funnel Data
-  const funnelData = stages.map(stage => ({
-    name: stage.title,
-    value: opportunities.filter(o => o.stage === stage.id).length,
-    fill: stage.color
-  }));
+  // Funnel Data: Sort stages logically (Start -> End)
+  // Order: 16 (Yet to Contact) -> ... -> 21 (Cheque Ready) -> 10 (Closed)
+  // We exclude '0 - Junk' from the visual funnel as it's a dropout bucket.
+  const stageOrder = ['16', '17', '18', '19', '20', '20.5', '21', '10'];
+
+  const funnelData = stageOrder.map(id => {
+    const stage = stages.find(s => s.id === id);
+    if (!stage) return null;
+    return {
+      name: stage.title.split(' - ')[1] || stage.title, // Clean name (remove "16 - ")
+      fullName: stage.title,
+      value: opportunities.filter(o => o.stage === id).length,
+      fill: stage.color
+    };
+  }).filter(Boolean) as any[];
 
   // Pipeline Trend (Cumulative value over time based on creation date)
   const pipelineData = React.useMemo(() => {
@@ -54,7 +67,6 @@ const Dashboard: React.FC = () => {
       }
     });
 
-    // Convert map to array and take last 7-10 points to avoid overcrowding
     return Array.from(trendMap.entries()).map(([name, value]) => ({ name, value }));
   }, [opportunities]);
 
@@ -105,30 +117,46 @@ const Dashboard: React.FC = () => {
                 <stat.icon size={24} />
               </div>
             </div>
-            <div className={`mt-4 flex items-center text-sm font-medium ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-              {stat.isPositive ? <TrendingUp size={16} className="mr-1" /> : <TrendingDown size={16} className="mr-1" />}
-              {stat.change}
-              <span className="text-gray-400 font-normal ml-2">vs last month</span>
-            </div>
           </div>
         ))}
       </div>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Charts Area */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Main Charts Area - Now Full Width */}
+        <div className="lg:col-span-3 space-y-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {/* Funnel */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Lead Conversion Funnel</h3>
-              <div className="h-64">
-                {funnelData.some(d => d.value > 0) ? (
+              <div className="h-96">
+                {funnelData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={funnelData} layout="horizontal">
+                    <BarChart data={funnelData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{ fill: 'transparent' }} />
+                      <XAxis
+                        dataKey="name"
+                        angle={-45}
+                        textAnchor="end"
+                        interval={0}
+                        height={60}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'transparent' }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-2 border border-gray-200 shadow-lg rounded">
+                                <p className="font-bold">{data.fullName}</p>
+                                <p className="text-sm">Count: {data.value}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                       <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                         {funnelData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -145,7 +173,7 @@ const Dashboard: React.FC = () => {
             {/* Pipeline Trend */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Pipeline Value Trend</h3>
-              <div className="h-64">
+              <div className="h-96">
                 {pipelineData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={pipelineData}>
@@ -208,17 +236,6 @@ const Dashboard: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Activity Feed */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-fit">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Activity Feed</h3>
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">No recent activity.</p>
-          </div>
-          <button className="w-full mt-6 py-2 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors">
-            View All Activity
-          </button>
         </div>
       </div>
     </div>

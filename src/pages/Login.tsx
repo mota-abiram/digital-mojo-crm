@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     const handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);

@@ -157,7 +157,8 @@ const Calendars: React.FC = () => {
                             time: timeStr,
                             assignedTo: currentUserId,
                             notes: event.description || '',
-                            contactId: ''
+                            contactId: '',
+                            googleEventId: event.id
                         });
                         addedCount++;
                     }
@@ -187,7 +188,7 @@ const Calendars: React.FC = () => {
     const handleSyncGoogleCalendar = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            provider.addScope('https://www.googleapis.com/auth/calendar.events.readonly');
+            provider.addScope('https://www.googleapis.com/auth/calendar.events');
             if (currentUser?.email) {
                 provider.setCustomParameters({
                     login_hint: currentUser.email
@@ -242,13 +243,80 @@ const Calendars: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    const createGoogleEvent = async (apt: any) => {
+        if (!googleToken) return null;
+        try {
+            const startDateTime = new Date(`${apt.date}T${apt.time}`);
+            const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour default
+
+            const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${googleToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    summary: apt.title,
+                    description: apt.notes,
+                    start: { dateTime: startDateTime.toISOString() },
+                    end: { dateTime: endDateTime.toISOString() }
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                return data.id;
+            }
+        } catch (e) {
+            console.error("Failed to create Google event", e);
+        }
+        return null;
+    };
+
+    const updateGoogleEvent = async (eventId: string, apt: any) => {
+        if (!googleToken || !eventId) return;
+        try {
+            const startDateTime = new Date(`${apt.date}T${apt.time}`);
+            const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+
+            await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${googleToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    summary: apt.title,
+                    description: apt.notes,
+                    start: { dateTime: startDateTime.toISOString() },
+                    end: { dateTime: endDateTime.toISOString() }
+                })
+            });
+        } catch (e) {
+            console.error("Failed to update Google event", e);
+        }
+    };
+
+    const deleteGoogleEvent = async (eventId: string) => {
+        if (!googleToken || !eventId) return;
+        try {
+            await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${googleToken}`
+                }
+            });
+        } catch (e) {
+            console.error("Failed to delete Google event", e);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!formData.title || !formData.date || !formData.time) {
             toast.error('Title, Date, and Time are required');
             return;
         }
 
-        const aptData = {
+        const aptData: any = {
             title: formData.title,
             date: formData.date,
             time: formData.time,
@@ -259,9 +327,21 @@ const Calendars: React.FC = () => {
 
         try {
             if (editingId) {
+                const existingApt = appointments.find(a => a.id === editingId);
+                // Update Google Calendar if linked
+                if (existingApt?.googleEventId) {
+                    await updateGoogleEvent(existingApt.googleEventId, aptData);
+                }
+
                 await updateAppointment(editingId, aptData);
                 toast.success('Appointment updated successfully');
             } else {
+                // Create in Google Calendar first if connected
+                if (googleToken) {
+                    const googleId = await createGoogleEvent(aptData);
+                    if (googleId) aptData.googleEventId = googleId;
+                }
+
                 await addAppointment(aptData);
                 toast.success('Appointment created successfully');
             }
@@ -277,6 +357,11 @@ const Calendars: React.FC = () => {
         if (!editingId) return;
         if (window.confirm('Are you sure you want to delete this appointment?')) {
             try {
+                const existingApt = appointments.find(a => a.id === editingId);
+                if (existingApt?.googleEventId) {
+                    await deleteGoogleEvent(existingApt.googleEventId);
+                }
+
                 await deleteAppointment(editingId);
                 toast.success('Appointment deleted successfully');
                 setIsModalOpen(false);

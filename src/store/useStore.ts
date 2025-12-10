@@ -67,7 +67,15 @@ export const useStore = create<AppState>((set, get) => ({
     setCurrentUser: (user) => set({ currentUser: user }),
     logout: async () => {
         await signOut(auth);
-        set({ currentUser: null });
+        set({
+            currentUser: null,
+            contacts: [],
+            opportunities: [],
+            appointments: [],
+            conversations: [],
+            notifications: [],
+            googleToken: null
+        });
     },
     initializeAuthListener: () => {
         onAuthStateChanged(auth, (user) => {
@@ -375,18 +383,20 @@ export const useStore = create<AppState>((set, get) => ({
 
     initializeListeners: () => {
         const userId = get().currentUser?.id;
-        // Note: In a real app, we should store unsubscribe functions and call them before resubscribing
+        if (!userId) return;
 
-        // Removed contact subscription to use pagination
-        // const unsubContacts = api.contacts.subscribe((data) => {
-        //     set({ contacts: data, isLoading: false });
-        // }, userId);
+        // Fetch initial data
+        get().fetchContacts();
+        get().fetchOpportunities();
+        get().fetchAppointments();
+        get().fetchConversations();
+        get().fetchNotifications();
 
-        const unsubOpps = api.opportunities.subscribe((data) => {
-            set({ opportunities: data });
-        }, userId);
+        // Subscribe to real-time updates
+        // Note: We are using fetch instead of subscribe for heavy filtered lists to avoid excessive reads/complexity
+        // but if we were to subscribe, we MUST pass userId.
 
-        const unsubApts = api.appointments.subscribe((data) => {
+        const unsubscribeApps = api.appointments.subscribe((data) => {
             set({ appointments: data });
         }, userId);
 

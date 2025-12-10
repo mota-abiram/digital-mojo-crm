@@ -100,6 +100,7 @@ export interface Appointment {
   assignedTo: string;
   notes: string;
   contactId?: string;
+  googleEventId?: string;
 }
 
 export interface CalendarEvent {

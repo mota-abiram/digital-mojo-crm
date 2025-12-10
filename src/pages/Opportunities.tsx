@@ -201,7 +201,17 @@ const Opportunities: React.FC = () => {
         // If dropped over a container (stage)
         if (stages.some(s => s.id === overId)) {
             if (opportunity.stage !== overId) {
-                await updateOpportunity(activeId, { stage: overId });
+                const updates: any = { stage: overId };
+
+                // Auto-update status if moved to 'Closed' stage
+                if (overId === '10') {
+                    updates.status = 'Won';
+                } else if (opportunity.stage === '10' && overId !== '10') {
+                    // Reset to Open if moved OUT of Closed stage
+                    updates.status = 'Open';
+                }
+
+                await updateOpportunity(activeId, updates);
                 toast.success('Opportunity moved');
             }
         }
