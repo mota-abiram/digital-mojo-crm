@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
 import { Plus, MoreHorizontal, X, Edit, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Calendar, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, FileText } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -186,6 +186,32 @@ const Opportunities: React.FC = () => {
         setTempStages(stages);
     }, [stages]);
 
+    // FILTER STATE
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        pipelineId: '',
+        stage: '',
+        status: ''
+    });
+
+    const visibleOpportunities = useMemo(() => {
+        return opportunities.filter(opp => {
+            // Text Search
+            const matchesSearch =
+                opp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                opp.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                opp.companyName?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Advanced Filters
+            const matchesPipeline = filters.pipelineId ? opp.pipelineId === filters.pipelineId : true;
+            const matchesStage = filters.stage ? opp.stage === filters.stage : true;
+            const matchesStatus = filters.status ? opp.status === filters.status : true;
+
+            return matchesSearch && matchesPipeline && matchesStage && matchesStatus;
+        });
+    }, [opportunities, searchTerm, filters.pipelineId, filters.stage, filters.status]);
+
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
@@ -219,7 +245,7 @@ const Opportunities: React.FC = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedIds(new Set(opportunities.map(o => o.id)));
+            setSelectedIds(new Set(visibleOpportunities.map(o => o.id)));
         } else {
             setSelectedIds(new Set());
         }
@@ -595,6 +621,41 @@ const Opportunities: React.FC = () => {
         });
     };
 
+    const handleExport = () => {
+        if (opportunities.length === 0) {
+            toast.error('No opportunities to export');
+            return;
+        }
+
+        const csvData = opportunities.map(opp => ({
+            'Opportunity Name': opp.name,
+            'Value': opp.value,
+            'Stage': stages.find(s => s.id === opp.stage)?.title || opp.stage,
+            'Status': opp.status,
+            'Owner': opp.owner,
+            'Source': opp.source,
+            'Contact Name': opp.contactName,
+            'Contact Email': opp.contactEmail,
+            'Contact Phone': opp.contactPhone,
+            'Company Name': opp.companyName,
+            'Pipeline': opp.pipelineId,
+            'Tags': opp.tags.join(', '),
+            'Created At': opp.createdAt,
+            'Updated At': opp.updatedAt
+        }));
+
+        const csvString = Papa.unparse(csvData);
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `opportunities_export_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="p-8 h-full flex flex-col bg-gray-50">
             {/* Header */}
@@ -638,6 +699,12 @@ const Opportunities: React.FC = () => {
                             className="hidden"
                         />
                         <button
+                            onClick={handleExport}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2"
+                        >
+                            <Download size={16} /> Export
+                        </button>
+                        <button
                             onClick={() => handleOpenModal()}
                             className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
                         >
@@ -668,18 +735,76 @@ const Opportunities: React.FC = () => {
                 )}
 
                 {/* Filters Bar */}
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center relative">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                         <input
                             type="text"
                             placeholder="Search Opportunities"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                     </div>
-                    <button className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 flex items-center gap-2 text-sm font-medium">
-                        <Filter size={18} /> Advanced Filters
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-primary text-primary' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <Filter size={18} /> Filters {(Object.values(filters).some(Boolean)) && <span className="w-2 h-2 rounded-full bg-primary mb-2"></span>}
+                        </button>
+
+                        {/* Filter Dropdown */}
+                        {isFilterOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Pipeline</label>
+                                    <select
+                                        value={filters.pipelineId}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, pipelineId: e.target.value }))}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    >
+                                        <option value="">All Pipelines</option>
+                                        <option value="Marketing Pipeline">Marketing Pipeline</option>
+                                        <option value="Sales Pipeline">Sales Pipeline</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Stage</label>
+                                    <select
+                                        value={filters.stage}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, stage: e.target.value }))}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    >
+                                        <option value="">All Stages</option>
+                                        {stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+                                    <select
+                                        value={filters.status}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    >
+                                        <option value="">All Statuses</option>
+                                        <option value="Open">Open</option>
+                                        <option value="Won">Won</option>
+                                        <option value="Lost">Lost</option>
+                                        <option value="Abandoned">Abandoned</option>
+                                    </select>
+                                </div>
+                                <div className="pt-2 border-t border-gray-100 flex justify-end">
+                                    <button
+                                        onClick={() => setFilters({ pipelineId: '', stage: '', status: '' })}
+                                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -694,7 +819,7 @@ const Opportunities: React.FC = () => {
                                         <DroppableColumn
                                             key={stage.id}
                                             stage={stage}
-                                            items={opportunities.filter(o => o.stage === stage.id)}
+                                            items={visibleOpportunities.filter(o => o.stage === stage.id)}
                                             onEdit={handleOpenModal}
                                             onDelete={handleDelete}
                                         />
@@ -714,20 +839,21 @@ const Opportunities: React.FC = () => {
                         </div>
                     </DndContext>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
+                    // List View
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
                         <div className="overflow-auto flex-1">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="bg-gray-50 sticky top-0 z-10">
+                            <table className="w-full text-sm text-left text-gray-500">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                                     <tr>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 w-8">
+                                        <th className="p-4 w-4">
                                             <input
                                                 type="checkbox"
-                                                checked={opportunities.length > 0 && selectedIds.size === opportunities.length}
+                                                checked={selectedIds.size === visibleOpportunities.length && visibleOpportunities.length > 0}
                                                 onChange={handleSelectAll}
-                                                className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
                                             />
                                         </th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity Name</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Contact</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
@@ -836,7 +962,7 @@ const Opportunities: React.FC = () => {
                         <div className="flex flex-1 overflow-hidden">
                             {/* Sidebar Tabs */}
                             <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col overflow-y-auto">
-                                {['Opportunity Details', 'Book/Update Appointment', 'Tasks', 'Notes', 'Payments', 'Associated Objects'].map((tab) => {
+                                {['Opportunity Details', 'Book/Update Appointment', 'Tasks', 'Notes'].map((tab) => {
                                     const id = tab.toLowerCase().replace(/[^a-z0-9]/g, '-');
                                     return (
                                         <button
@@ -1392,7 +1518,7 @@ const Opportunities: React.FC = () => {
                                 {editingId && (
                                     <>
                                         <p>Created By: Digital Mojo</p>
-                                        <p>Created on: {format(new Date(), 'MMM d, yyyy h:mm a')} (IST)</p>
+                                        <p>Created on: {editingId && opportunities.find(o => o.id === editingId)?.createdAt ? format(new Date(opportunities.find(o => o.id === editingId)!.createdAt!), 'MMM d, yyyy h:mm a') : '-'} (IST)</p>
                                         <a href="#" className="text-primary hover:underline flex items-center gap-1 mt-1">
                                             Audit Logs: {editingId} <Download size={12} />
                                         </a>

@@ -18,20 +18,37 @@ import { useStore } from '../store/useStore';
 
 const Dashboard: React.FC = () => {
   const { opportunities, fetchOpportunities, contacts, fetchContacts, stages } = useStore();
+  const [timeRange, setTimeRange] = React.useState('30'); // '30', '7', '1'
 
   useEffect(() => {
     fetchOpportunities();
     fetchContacts();
   }, [fetchOpportunities, fetchContacts]);
 
-  // Calculate Stats
-  const totalPipelineValue = opportunities.reduce((sum, opp) => sum + Number(opp.value), 0);
+  // Filter Opportunities by Time Range
+  const filteredOpportunities = React.useMemo(() => {
+    const now = new Date();
+    const pastDate = new Date();
+    pastDate.setDate(now.getDate() - parseInt(timeRange));
+
+    // Set to start of the day for accurate comparison
+    pastDate.setHours(0, 0, 0, 0);
+
+    return opportunities.filter(opp => {
+      if (!opp.createdAt) return false;
+      const oppDate = new Date(opp.createdAt);
+      return oppDate >= pastDate;
+    });
+  }, [opportunities, timeRange]);
+
+  // Calculate Stats using filtered data
+  const totalPipelineValue = filteredOpportunities.reduce((sum, opp) => sum + Number(opp.value), 0);
 
   // Strict check for 'Won' status. 
   // If 'Closed' stage (ID 10) implies Won, we should ensure the dragging logic sets status='Won'.
   // Here we assume status is the source of truth.
-  const wonOpportunities = opportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
-  const totalOpportunities = opportunities.length;
+  const wonOpportunities = filteredOpportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
+  const totalOpportunities = filteredOpportunities.length;
   const conversionRate = totalOpportunities > 0 ? ((wonOpportunities / totalOpportunities) * 100).toFixed(1) : '0';
 
   // Funnel Data: Sort stages logically (Start -> End)
@@ -45,14 +62,14 @@ const Dashboard: React.FC = () => {
     return {
       name: stage.title.split(' - ')[1] || stage.title, // Clean name (remove "16 - ")
       fullName: stage.title,
-      value: opportunities.filter(o => o.stage === id).length,
+      value: filteredOpportunities.filter(o => o.stage === id).length,
       fill: stage.color
     };
   }).filter(Boolean) as any[];
 
   // Pipeline Trend (Cumulative value over time based on creation date)
   const pipelineData = React.useMemo(() => {
-    const sortedOpps = [...opportunities].sort((a, b) =>
+    const sortedOpps = [...filteredOpportunities].sort((a, b) =>
       new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
     );
 
@@ -68,11 +85,11 @@ const Dashboard: React.FC = () => {
     });
 
     return Array.from(trendMap.entries()).map(([name, value]) => ({ name, value }));
-  }, [opportunities]);
+  }, [filteredOpportunities]);
 
   // Task Data (Aggregated from Opportunity Tasks)
   const taskData = React.useMemo(() => {
-    const allTasks = opportunities.flatMap(o => o.tasks || []);
+    const allTasks = filteredOpportunities.flatMap(o => o.tasks || []);
     const completed = allTasks.filter(t => t.isCompleted).length;
     const pending = allTasks.length - completed;
 
@@ -82,7 +99,7 @@ const Dashboard: React.FC = () => {
       { name: 'Completed', value: completed },
       { name: 'Pending', value: pending }
     ];
-  }, [opportunities]);
+  }, [filteredOpportunities]);
 
   const taskColors = ['#1ea34f', '#eb7311'];
 
@@ -91,10 +108,14 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex gap-2">
-          <select className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5">
-            <option>Last 30 Days</option>
-            <option>Last 7 Days</option>
-            <option>Today</option>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+          >
+            <option value="30">Last 30 Days</option>
+            <option value="7">Last 7 Days</option>
+            <option value="1">Today</option>
           </select>
         </div>
       </div>
