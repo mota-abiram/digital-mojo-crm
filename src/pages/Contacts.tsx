@@ -10,7 +10,7 @@ import { COUNTRY_CODES } from '../utils/countryCodes';
 
 const Contacts: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { contacts, fetchContacts, fetchContact, searchContacts, addContact, updateContact, deleteContact, bulkDeleteContacts, isLoading, currentUser, hasMoreContacts, loadMoreContacts, addOpportunity } = useStore();
+    const { contacts, stages, fetchContacts, fetchContact, searchContacts, addContact, updateContact, deleteContact, bulkDeleteContacts, isLoading, currentUser, hasMoreContacts, loadMoreContacts, addOpportunity } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const { id } = useParams();
@@ -45,7 +45,9 @@ const Contacts: React.FC = () => {
 
         Value: 'Standard',
         status: 'Active',
-        notes: ''
+        notes: '',
+        opportunityName: '',
+        pipelineStage: '0'
     });
 
     // Initial fetch handled by search effect when term is empty, but we need to ensure it runs on mount if empty
@@ -143,13 +145,15 @@ const Contacts: React.FC = () => {
 
                 Value: contact.Value || 'Standard',
                 status: contact.status || 'Active',
-                notes: contact.notes || ''
+                notes: contact.notes || '',
+                opportunityName: '',
+                pipelineStage: '0'
             });
         } else {
             setEditingId(null);
             setCountryCode('+1');
             setLocalPhone('');
-            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '' });
+            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '', opportunityName: '', pipelineStage: '0' });
         }
         setIsModalOpen(true);
     };
@@ -182,11 +186,12 @@ const Contacts: React.FC = () => {
                 toast.success('Contact created successfully');
 
                 try {
-                    // Auto-create Opportunity
+                    // Auto-create Opportunity with user-specified name and pipeline stage
+                    const opportunityName = formData.opportunityName || formData.companyName || `${contactData.name}'s Opportunity`;
                     await addOpportunity({
-                        name: contactData.companyName || `${contactData.name}'s Opportunity`,
+                        name: opportunityName,
                         value: 0,
-                        stage: '0', // Assuming '0' is the ID for "0 - Junk" or first stage. Adjust if needed or fetch dynamic.
+                        stage: formData.pipelineStage || '0', // Use selected pipeline stage
                         status: 'Open',
                         owner: currentUser?.id || 'Unknown',
                         contactId: newContact.id,
@@ -205,7 +210,7 @@ const Contacts: React.FC = () => {
             }
             setIsModalOpen(false);
 
-            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '' });
+            setFormData({ name: '', email: '', companyName: '', type: '', Value: 'Standard', status: 'Active', notes: '', opportunityName: '', pipelineStage: '0' });
             setCountryCode('+1');
             setLocalPhone('');
         } catch (error: any) {
@@ -674,6 +679,32 @@ const Contacts: React.FC = () => {
                             placeholder="Company Ltd."
                         />
                     </div>
+
+                    {/* Opportunity Fields - Only show when creating new contact */}
+                    {!editingId && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                            <h4 className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                Linked Opportunity
+                            </h4>
+                            <div>
+                                <label className="block mb-2 text-sm font-medium text-gray-900">Pipeline Stage</label>
+                                <select
+                                    value={formData.pipelineStage}
+                                    onChange={(e) => setFormData({ ...formData, pipelineStage: e.target.value })}
+                                    className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
+                                >
+                                    {stages.map((stage) => (
+                                        <option key={stage.id} value={stage.id}>
+                                            {stage.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block mb-2 text-sm font-medium text-gray-900">Type</label>

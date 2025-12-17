@@ -949,7 +949,7 @@ const Opportunities: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {opportunities.map((opp) => (
+                                    {visibleOpportunities.map((opp) => (
                                         <tr key={opp.id} className={`hover:bg-gray-50 transition-colors group cursor-pointer ${selectedIds.has(opp.id) ? 'bg-blue-50/50' : ''}`} onClick={() => handleOpenModal(opp)}>
                                             <td className="p-4" onClick={e => e.stopPropagation()}>
                                                 <input
@@ -1019,7 +1019,7 @@ const Opportunities: React.FC = () => {
                             </table>
                         </div>
                         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
-                            <span>Showing {opportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
+                            <span>Showing {visibleOpportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
                             {isLoading && (
                                 <div className="flex items-center gap-2 text-brand-blue">
                                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
