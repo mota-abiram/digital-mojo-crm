@@ -86,6 +86,41 @@ const Contacts: React.FC = () => {
         return matchesType; // Simplification: Removing tag filter logic for now as 'tags' array is gone.
     });
 
+    // Infinite scroll refs
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const loadMoreSentinelRef = useRef<HTMLTableRowElement>(null);
+
+    // Infinite scroll using IntersectionObserver
+    useEffect(() => {
+        const loadMoreElement = loadMoreSentinelRef.current;
+        const scrollContainer = scrollContainerRef.current;
+
+        if (!loadMoreElement || !scrollContainer) return;
+
+        // Don't enable infinite scroll when searching or filtering
+        if (searchTerm || filterType !== 'All' || filterTag) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && hasMoreContacts && !isLoading) {
+                    loadMoreContacts();
+                }
+            },
+            {
+                root: scrollContainer,
+                rootMargin: '100px',
+                threshold: 0.1
+            }
+        );
+
+        observer.observe(loadMoreElement);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [hasMoreContacts, loadMoreContacts, isLoading, searchTerm, filterType, filterTag]);
+
     const handleOpenModal = (contact?: Contact) => {
         if (contact) {
             setEditingId(contact.id);
@@ -461,7 +496,7 @@ const Contacts: React.FC = () => {
                 </div>
 
                 {/* Table */}
-                <div className="flex-1 overflow-auto">
+                <div ref={scrollContainerRef} className="flex-1 overflow-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
@@ -555,15 +590,15 @@ const Contacts: React.FC = () => {
                                             </td>
                                         </tr>
                                     ))}
-                                    {hasMoreContacts && !searchTerm && filterType === 'All' && !filterTag && (
-                                        <tr>
-                                            <td colSpan={8} className="p-4 text-center">
-                                                <button
-                                                    onClick={() => loadMoreContacts()}
-                                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
-                                                >
-                                                    Load More
-                                                </button>
+                                    {/* Sentinel row for infinite scroll */}
+                                    {!searchTerm && filterType === 'All' && !filterTag && (
+                                        <tr ref={loadMoreSentinelRef}>
+                                            <td colSpan={9} className="h-4">
+                                                {isLoading && hasMoreContacts && (
+                                                    <div className="flex justify-center py-4">
+                                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     )}
