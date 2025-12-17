@@ -30,7 +30,10 @@ interface AppState {
 
     stages: { id: string; title: string; color: string }[];
     stageCounts: Record<string, { count: number; value: number }>;
+    stagePagination: Record<string, { lastDoc: any; hasMore: boolean; isLoading: boolean }>;
     fetchOpportunities: () => Promise<void>;
+    fetchOpportunitiesByStage: (stageId: string) => Promise<void>;
+    loadMoreByStage: (stageId: string) => Promise<void>;
     lastOpportunityDoc: any;
     hasMoreOpportunities: boolean;
     loadMoreOpportunities: () => Promise<void>;
@@ -119,10 +122,88 @@ export const useStore = create<AppState>((set, get) => ({
         { id: '21', title: '21 - Cheque Ready', color: '#006400' },
     ],
     stageCounts: {},
+    stagePagination: {},
     updateStages: (stages) => set({ stages }),
     fetchStageCounts: async () => {
         const counts = await api.opportunities.getStageCounts();
         set({ stageCounts: counts });
+    },
+    fetchOpportunitiesByStage: async (stageId: string) => {
+        const pagination = get().stagePagination[stageId];
+        if (pagination?.isLoading) return;
+
+        set((state) => ({
+            stagePagination: {
+                ...state.stagePagination,
+                [stageId]: { ...state.stagePagination[stageId], isLoading: true }
+            }
+        }));
+
+        try {
+            const result = await api.opportunities.getByStage(stageId, undefined, 10);
+            set((state) => {
+                // Remove existing opportunities for this stage, add new ones
+                const otherOpportunities = state.opportunities.filter(o => o.stage !== stageId);
+                return {
+                    opportunities: [...otherOpportunities, ...result.data],
+                    stagePagination: {
+                        ...state.stagePagination,
+                        [stageId]: {
+                            lastDoc: result.lastDoc,
+                            hasMore: result.hasMore,
+                            isLoading: false
+                        }
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('Error fetching opportunities by stage:', error);
+            set((state) => ({
+                stagePagination: {
+                    ...state.stagePagination,
+                    [stageId]: { ...state.stagePagination[stageId], isLoading: false }
+                }
+            }));
+        }
+    },
+    loadMoreByStage: async (stageId: string) => {
+        const pagination = get().stagePagination[stageId];
+        if (!pagination || pagination.isLoading || !pagination.hasMore) return;
+
+        set((state) => ({
+            stagePagination: {
+                ...state.stagePagination,
+                [stageId]: { ...state.stagePagination[stageId], isLoading: true }
+            }
+        }));
+
+        try {
+            const result = await api.opportunities.getByStage(stageId, pagination.lastDoc, 10);
+            set((state) => {
+                // Add new opportunities (avoid duplicates)
+                const existingIds = new Set(state.opportunities.map(o => o.id));
+                const newOpportunities = result.data.filter(o => !existingIds.has(o.id));
+                return {
+                    opportunities: [...state.opportunities, ...newOpportunities],
+                    stagePagination: {
+                        ...state.stagePagination,
+                        [stageId]: {
+                            lastDoc: result.lastDoc,
+                            hasMore: result.hasMore,
+                            isLoading: false
+                        }
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('Error loading more opportunities by stage:', error);
+            set((state) => ({
+                stagePagination: {
+                    ...state.stagePagination,
+                    [stageId]: { ...state.stagePagination[stageId], isLoading: false }
+                }
+            }));
+        }
     },
     appointments: [],
     conversations: [],

@@ -64,16 +64,13 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 border border-gray-200">
-                            {item.owner ? item.owner.charAt(0).toUpperCase() : <User size={12} />}
-                        </div>
+                    <div className="flex items-center">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onEdit(item);
                             }}
-                            className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
+                            className="text-gray-400 hover:text-gray-600 p-1"
                         >
                             <MoreHorizontal size={16} />
                         </button>
@@ -184,7 +181,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
 };
 
 const Opportunities: React.FC = () => {
-    const { opportunities, stages, stageCounts, fetchOpportunities, fetchStageCounts, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities, isLoading } = useStore();
+    const { opportunities, stages, stageCounts, stagePagination, fetchOpportunities, fetchOpportunitiesByStage, loadMoreByStage, fetchStageCounts, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities, isLoading } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
@@ -232,7 +229,11 @@ const Opportunities: React.FC = () => {
         fetchOpportunities();
         fetchContacts();
         fetchStageCounts();
-    }, [fetchOpportunities, fetchContacts, fetchStageCounts, currentUser]);
+        // Fetch initial opportunities for each stage (for board view)
+        stages.forEach(stage => {
+            fetchOpportunitiesByStage(stage.id);
+        });
+    }, [fetchOpportunities, fetchContacts, fetchStageCounts, fetchOpportunitiesByStage, currentUser]);
 
     useEffect(() => {
         setTempStages(stages);
@@ -898,24 +899,22 @@ const Opportunities: React.FC = () => {
             <div className="flex-1 min-h-0 overflow-hidden">
                 {viewMode === 'board' ? (
                     <DndContext onDragEnd={handleDragEnd}>
-                        <div className="relative h-full">
-                            <div className="h-full overflow-x-auto overflow-y-hidden">
-                                <div className="flex h-full gap-6 min-w-max pb-4">
-                                    {stages.map(stage => (
-                                        <DroppableColumn
-                                            key={stage.id}
-                                            stage={stage}
-                                            items={visibleOpportunities.filter(o => o.stage === stage.id)}
-                                            onEdit={handleOpenModal}
-                                            onDelete={handleDelete}
-                                            hasMore={hasMoreOpportunities}
-                                            onLoadMore={loadMoreOpportunities}
-                                            isLoading={isLoading}
-                                            totalCount={stageCounts[stage.id]?.count || 0}
-                                            totalValue={stageCounts[stage.id]?.value || 0}
-                                        />
-                                    ))}
-                                </div>
+                        <div className="h-full overflow-x-auto overflow-y-hidden custom-scrollbar pb-4">
+                            <div className="flex h-full gap-4 min-w-max px-1">
+                                {stages.map(stage => (
+                                    <DroppableColumn
+                                        key={stage.id}
+                                        stage={stage}
+                                        items={visibleOpportunities.filter(o => o.stage === stage.id)}
+                                        onEdit={handleOpenModal}
+                                        onDelete={handleDelete}
+                                        hasMore={stagePagination[stage.id]?.hasMore ?? true}
+                                        onLoadMore={() => loadMoreByStage(stage.id)}
+                                        isLoading={stagePagination[stage.id]?.isLoading ?? false}
+                                        totalCount={stageCounts[stage.id]?.count || 0}
+                                        totalValue={stageCounts[stage.id]?.value || 0}
+                                    />
+                                ))}
                             </div>
                         </div>
                     </DndContext>

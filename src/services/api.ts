@@ -141,6 +141,49 @@ export const api = {
                 return { data, lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1] };
             }
         },
+        // Fetch opportunities by stage with pagination
+        getByStage: async (stageId: string, lastDoc?: any, limitCount: number = 10) => {
+            try {
+                const constraints: any[] = [];
+                constraints.push(where('stage', '==', stageId));
+                constraints.push(orderBy('createdAt', 'desc'));
+
+                if (lastDoc) {
+                    constraints.push(startAfter(lastDoc));
+                }
+
+                constraints.push(limit(limitCount));
+
+                const q = query(collection(db, 'opportunities'), ...constraints);
+                const querySnapshot = await getDocs(q);
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+                return {
+                    data,
+                    lastDoc: querySnapshot.docs[querySnapshot.docs.length - 1],
+                    hasMore: querySnapshot.docs.length === limitCount
+                };
+            } catch (error) {
+                console.warn("Index query failed for opportunities by stage, falling back:", error);
+
+                // Fallback: fetch all for this stage and paginate client-side
+                const q = query(collection(db, 'opportunities'), where('stage', '==', stageId));
+                const querySnapshot = await getDocs(q);
+                let data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+
+                // Client-side sort
+                data = data.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0).getTime();
+                    const dateB = new Date(b.createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+
+                return {
+                    data,
+                    lastDoc: null,
+                    hasMore: false
+                };
+            }
+        },
         // SHARED: Subscribe to ALL opportunities (no userId filter)
         subscribe: (callback: (data: Opportunity[]) => void, userId?: string) => {
             // Opportunities are shared across all accounts
