@@ -13,93 +13,50 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, IndianRupee, Target, Users, CheckCircle } from 'lucide-react';
+import { TrendingUp, IndianRupee, Target, CheckCircle, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const Dashboard: React.FC = () => {
-  const { opportunities, fetchOpportunities, contacts, fetchContacts, stages } = useStore();
+  const { dashboardStats, fetchDashboardStats, stages } = useStore();
   const [timeRange, setTimeRange] = React.useState('30'); // '30', '7', '1'
 
+  // Fetch dashboard stats when time range changes
   useEffect(() => {
-    fetchOpportunities();
-    fetchContacts();
-  }, [fetchOpportunities, fetchContacts]);
+    fetchDashboardStats(parseInt(timeRange));
+  }, [fetchDashboardStats, timeRange]);
 
-  // Filter Opportunities by Time Range
-  const filteredOpportunities = React.useMemo(() => {
-    const now = new Date();
-    const pastDate = new Date();
-    pastDate.setDate(now.getDate() - parseInt(timeRange));
-
-    // Set to start of the day for accurate comparison
-    pastDate.setHours(0, 0, 0, 0);
-
-    return opportunities.filter(opp => {
-      if (!opp.createdAt) return false;
-      const oppDate = new Date(opp.createdAt);
-      return oppDate >= pastDate;
-    });
-  }, [opportunities, timeRange]);
-
-  // Calculate Stats using filtered data
-  const totalPipelineValue = filteredOpportunities.reduce((sum, opp) => sum + Number(opp.value), 0);
-
-  // Strict check for 'Won' status. 
-  // If 'Closed' stage (ID 10) implies Won, we should ensure the dragging logic sets status='Won'.
-  // Here we assume status is the source of truth.
-  const wonOpportunities = filteredOpportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
-  const totalOpportunities = filteredOpportunities.length;
-  const conversionRate = totalOpportunities > 0 ? ((wonOpportunities / totalOpportunities) * 100).toFixed(1) : '0';
+  // Loading state
+  if (!dashboardStats) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-gray-500">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Funnel Data: Sort stages logically (Start -> End)
-  // Order: 16 (Yet to Contact) -> ... -> 21 (Cheque Ready) -> 10 (Closed)
-  // We exclude '0 - Junk' from the visual funnel as it's a dropout bucket.
   const stageOrder = ['16', '17', '18', '19', '20', '20.5', '21', '10'];
 
   const funnelData = stageOrder.map(id => {
     const stage = stages.find(s => s.id === id);
     if (!stage) return null;
+    const stageData = dashboardStats.stageBreakdown[id];
     return {
-      name: stage.title.split(' - ')[1] || stage.title, // Clean name (remove "16 - ")
+      name: stage.title.split(' - ')[1] || stage.title,
       fullName: stage.title,
-      value: filteredOpportunities.filter(o => o.stage === id).length,
+      value: stageData?.count || 0,
       fill: stage.color
     };
   }).filter(Boolean) as any[];
 
-  // Pipeline Trend (Cumulative value over time based on creation date)
-  const pipelineData = React.useMemo(() => {
-    const sortedOpps = [...filteredOpportunities].sort((a, b) =>
-      new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
-    );
-
-    let cumulativeValue = 0;
-    const trendMap = new Map<string, number>();
-
-    sortedOpps.forEach(opp => {
-      if (opp.createdAt) {
-        const date = new Date(opp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        cumulativeValue += Number(opp.value);
-        trendMap.set(date, cumulativeValue);
-      }
-    });
-
-    return Array.from(trendMap.entries()).map(([name, value]) => ({ name, value }));
-  }, [filteredOpportunities]);
-
-  // Task Data (Aggregated from Opportunity Tasks)
-  const taskData = React.useMemo(() => {
-    const allTasks = filteredOpportunities.flatMap(o => o.tasks || []);
-    const completed = allTasks.filter(t => t.isCompleted).length;
-    const pending = allTasks.length - completed;
-
-    if (allTasks.length === 0) return [];
-
-    return [
-      { name: 'Completed', value: completed },
-      { name: 'Pending', value: pending }
-    ];
-  }, [filteredOpportunities]);
+  // Task Data
+  const taskData = dashboardStats.taskStats.total > 0 ? [
+    { name: 'Completed', value: dashboardStats.taskStats.completed },
+    { name: 'Pending', value: dashboardStats.taskStats.pending }
+  ] : [];
 
   const taskColors = ['#1ea34f', '#eb7311'];
 
@@ -123,18 +80,47 @@ const Dashboard: React.FC = () => {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Opportunities', value: totalOpportunities.toString(), change: '+0%', isPositive: true, icon: Target },
-          { label: 'Pipeline Value', value: `₹${totalPipelineValue.toLocaleString()}`, change: '+0%', isPositive: true, icon: IndianRupee },
-          { label: 'Conversion Rate', value: `${conversionRate}%`, change: '0%', isPositive: true, icon: TrendingUp },
-          { label: 'Closed Won', value: wonOpportunities.toString(), change: '+0%', isPositive: true, icon: CheckCircle },
+          {
+            label: 'Opportunities',
+            value: dashboardStats.totalOpportunities.toString(),
+            subtext: `${dashboardStats.openOpportunities} Open`,
+            icon: Target,
+            color: 'text-blue-600',
+            bgColor: 'bg-blue-50'
+          },
+          {
+            label: 'Pipeline Value',
+            value: `₹${dashboardStats.totalPipelineValue.toLocaleString()}`,
+            subtext: 'Total value',
+            icon: IndianRupee,
+            color: 'text-green-600',
+            bgColor: 'bg-green-50'
+          },
+          {
+            label: 'Conversion Rate',
+            value: `${dashboardStats.conversionRate.toFixed(1)}%`,
+            subtext: 'Won / Total',
+            icon: TrendingUp,
+            color: 'text-purple-600',
+            bgColor: 'bg-purple-50'
+          },
+          {
+            label: 'Closed Won',
+            value: dashboardStats.wonOpportunities.toString(),
+            subtext: `${dashboardStats.lostOpportunities} Lost`,
+            icon: CheckCircle,
+            color: 'text-emerald-600',
+            bgColor: 'bg-emerald-50'
+          },
         ].map((stat, idx) => (
           <div key={idx} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-gray-500">{stat.label}</p>
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</h3>
+                <p className="text-xs text-gray-400 mt-1">{stat.subtext}</p>
               </div>
-              <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
+              <div className={`p-3 ${stat.bgColor} rounded-lg ${stat.color}`}>
                 <stat.icon size={24} />
               </div>
             </div>
@@ -195,9 +181,9 @@ const Dashboard: React.FC = () => {
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Pipeline Value Trend</h3>
               <div className="h-96">
-                {pipelineData.length > 0 ? (
+                {dashboardStats.pipelineTrend.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={pipelineData}>
+                    <AreaChart data={dashboardStats.pipelineTrend}>
                       <defs>
                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#1ea34f" stopOpacity={0.1} />
@@ -206,7 +192,9 @@ const Dashboard: React.FC = () => {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                      <Tooltip />
+                      <Tooltip
+                        formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Pipeline Value']}
+                      />
                       <Area type="monotone" dataKey="value" stroke="#1ea34f" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
                     </AreaChart>
                   </ResponsiveContainer>

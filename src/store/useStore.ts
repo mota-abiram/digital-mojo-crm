@@ -59,6 +59,20 @@ interface AppState {
     notifications: Notification[];
     fetchNotifications: () => Promise<void>;
 
+    // Dashboard Stats
+    dashboardStats: {
+        totalOpportunities: number;
+        totalPipelineValue: number;
+        wonOpportunities: number;
+        lostOpportunities: number;
+        openOpportunities: number;
+        conversionRate: number;
+        stageBreakdown: Record<string, { count: number; value: number }>;
+        pipelineTrend: { name: string; value: number }[];
+        taskStats: { completed: number; pending: number; total: number };
+    } | null;
+    fetchDashboardStats: (daysBack: number) => Promise<void>;
+
     // Google Integration
     googleToken: string | null;
     setGoogleToken: (token: string | null) => void;
@@ -209,6 +223,29 @@ export const useStore = create<AppState>((set, get) => ({
     conversations: [],
     activeConversationId: null,
     notifications: [],
+
+    // Dashboard Stats
+    dashboardStats: null,
+    fetchDashboardStats: async (daysBack: number) => {
+        try {
+            const stats = await api.opportunities.getDashboardStats(daysBack);
+            set({
+                dashboardStats: {
+                    totalOpportunities: stats.totalOpportunities,
+                    totalPipelineValue: stats.totalPipelineValue,
+                    wonOpportunities: stats.wonOpportunities,
+                    lostOpportunities: stats.lostOpportunities,
+                    openOpportunities: stats.openOpportunities,
+                    conversionRate: stats.conversionRate,
+                    stageBreakdown: stats.stageBreakdown,
+                    pipelineTrend: stats.pipelineTrend,
+                    taskStats: stats.taskStats
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+        }
+    },
 
     googleToken: null,
     setGoogleToken: (token) => set({ googleToken: token }),

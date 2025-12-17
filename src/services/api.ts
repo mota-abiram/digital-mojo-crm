@@ -229,6 +229,81 @@ export const api = {
             });
 
             return counts;
+        },
+        // Get comprehensive dashboard statistics
+        getDashboardStats: async (daysBack: number = 30) => {
+            const q = query(collection(db, 'opportunities'));
+            const querySnapshot = await getDocs(q);
+            const allOpportunities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+
+            const now = new Date();
+            const pastDate = new Date();
+            pastDate.setDate(now.getDate() - daysBack);
+            pastDate.setHours(0, 0, 0, 0);
+
+            // Filter by time range
+            const filteredOpportunities = allOpportunities.filter(opp => {
+                if (!opp.createdAt) return false;
+                const oppDate = new Date(opp.createdAt);
+                return oppDate >= pastDate;
+            });
+
+            // Calculate stats
+            const totalOpportunities = filteredOpportunities.length;
+            const totalPipelineValue = filteredOpportunities.reduce((sum, opp) => sum + Number(opp.value || 0), 0);
+            const wonOpportunities = filteredOpportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
+            const lostOpportunities = filteredOpportunities.filter(opp => opp.status === 'Lost').length;
+            const openOpportunities = filteredOpportunities.filter(opp => opp.status === 'Open').length;
+            const conversionRate = totalOpportunities > 0 ? ((wonOpportunities / totalOpportunities) * 100) : 0;
+
+            // Stage breakdown
+            const stageBreakdown: Record<string, { count: number; value: number }> = {};
+            filteredOpportunities.forEach(opp => {
+                const stage = opp.stage || 'Unknown';
+                if (!stageBreakdown[stage]) {
+                    stageBreakdown[stage] = { count: 0, value: 0 };
+                }
+                stageBreakdown[stage].count += 1;
+                stageBreakdown[stage].value += Number(opp.value || 0);
+            });
+
+            // Pipeline trend (cumulative value over time)
+            const sortedOpps = [...filteredOpportunities].sort((a, b) =>
+                new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+            );
+
+            let cumulativeValue = 0;
+            const trendMap = new Map<string, number>();
+            sortedOpps.forEach(opp => {
+                if (opp.createdAt) {
+                    const date = new Date(opp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    cumulativeValue += Number(opp.value || 0);
+                    trendMap.set(date, cumulativeValue);
+                }
+            });
+            const pipelineTrend = Array.from(trendMap.entries()).map(([name, value]) => ({ name, value }));
+
+            // Task breakdown
+            const allTasks = filteredOpportunities.flatMap(o => o.tasks || []);
+            const completedTasks = allTasks.filter(t => t.isCompleted).length;
+            const pendingTasks = allTasks.length - completedTasks;
+
+            return {
+                totalOpportunities,
+                totalPipelineValue,
+                wonOpportunities,
+                lostOpportunities,
+                openOpportunities,
+                conversionRate,
+                stageBreakdown,
+                pipelineTrend,
+                taskStats: {
+                    completed: completedTasks,
+                    pending: pendingTasks,
+                    total: allTasks.length
+                },
+                allOpportunities: filteredOpportunities
+            };
         }
     },
     appointments: {
