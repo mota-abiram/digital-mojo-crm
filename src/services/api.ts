@@ -48,15 +48,24 @@ export const api = {
             return null;
         },
         // SHARED: Search across ALL contacts (no userId filter)
+        // Fetches all contacts and performs client-side search for comprehensive matching
         search: async (userId: string | undefined, term: string) => {
-            const q = query(
-                collection(db, 'contacts'),
-                where('name', '>=', term),
-                where('name', '<=', term + '\uf8ff')
-            );
-
+            // Fetch ALL contacts from the database to perform comprehensive search
+            const q = query(collection(db, 'contacts'));
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contact));
+            const allContacts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contact));
+
+            // Perform case-insensitive search across multiple fields
+            const searchTermLower = term.toLowerCase().trim();
+
+            return allContacts.filter(contact => {
+                const nameMatch = contact.name?.toLowerCase().includes(searchTermLower);
+                const emailMatch = contact.email?.toLowerCase().includes(searchTermLower);
+                const phoneMatch = contact.phone?.toLowerCase().includes(searchTermLower);
+                const companyMatch = contact.companyName?.toLowerCase().includes(searchTermLower);
+
+                return nameMatch || emailMatch || phoneMatch || companyMatch;
+            });
         },
         // SHARED: Subscribe to ALL contacts (no userId filter)
         subscribe: (callback: (data: Contact[]) => void, userId?: string) => {
@@ -157,6 +166,26 @@ export const api = {
         bulkDelete: async (ids: string[]) => {
             const promises = ids.map(id => deleteDoc(doc(db, 'opportunities', id)));
             await Promise.all(promises);
+        },
+        // Get total counts and values per stage
+        getStageCounts: async () => {
+            const q = query(collection(db, 'opportunities'));
+            const querySnapshot = await getDocs(q);
+            const counts: Record<string, { count: number; value: number }> = {};
+
+            querySnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const stage = data.stage || 'Unknown';
+                const value = Number(data.value) || 0;
+
+                if (!counts[stage]) {
+                    counts[stage] = { count: 0, value: 0 };
+                }
+                counts[stage].count += 1;
+                counts[stage].value += value;
+            });
+
+            return counts;
         }
     },
     appointments: {

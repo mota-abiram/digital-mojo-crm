@@ -29,6 +29,7 @@ interface AppState {
 
 
     stages: { id: string; title: string; color: string }[];
+    stageCounts: Record<string, { count: number; value: number }>;
     fetchOpportunities: () => Promise<void>;
     lastOpportunityDoc: any;
     hasMoreOpportunities: boolean;
@@ -38,6 +39,7 @@ interface AppState {
     deleteOpportunity: (id: string) => Promise<void>;
     bulkDeleteOpportunities: (ids: string[]) => Promise<void>;
     updateStages: (stages: { id: string; title: string; color: string }[]) => void;
+    fetchStageCounts: () => Promise<void>;
 
     fetchAppointments: () => Promise<void>;
     addAppointment: (apt: Omit<Appointment, 'id'>) => Promise<void>;
@@ -116,7 +118,12 @@ export const useStore = create<AppState>((set, get) => ({
         { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },
         { id: '21', title: '21 - Cheque Ready', color: '#006400' },
     ],
+    stageCounts: {},
     updateStages: (stages) => set({ stages }),
+    fetchStageCounts: async () => {
+        const counts = await api.opportunities.getStageCounts();
+        set({ stageCounts: counts });
+    },
     appointments: [],
     conversations: [],
     activeConversationId: null,
@@ -259,12 +266,18 @@ export const useStore = create<AppState>((set, get) => ({
             }
             return { opportunities: [...state.opportunities, newOpp] };
         });
+        // Refresh stage counts after adding
+        get().fetchStageCounts();
     },
     updateOpportunity: async (id, opp) => {
         await api.opportunities.update(id, opp);
         set((state) => ({
             opportunities: state.opportunities.map((o) => (o.id === id ? { ...o, ...opp } : o)),
         }));
+        // Refresh stage counts if stage or value might have changed
+        if (opp.stage !== undefined || opp.value !== undefined) {
+            get().fetchStageCounts();
+        }
     },
     deleteOpportunity: async (id) => {
         const opp = get().opportunities.find((o) => o.id === id);
@@ -278,6 +291,8 @@ export const useStore = create<AppState>((set, get) => ({
         set((state) => ({
             opportunities: state.opportunities.filter((o) => o.id !== id),
         }));
+        // Refresh stage counts after deletion
+        get().fetchStageCounts();
     },
     bulkDeleteOpportunities: async (ids: string[]) => {
         const opps = get().opportunities.filter((o) => ids.includes(o.id));
@@ -294,6 +309,8 @@ export const useStore = create<AppState>((set, get) => ({
         set((state) => ({
             opportunities: state.opportunities.filter((o) => !ids.includes(o.id)),
         }));
+        // Refresh stage counts after bulk deletion
+        get().fetchStageCounts();
     },
 
     fetchAppointments: async () => {

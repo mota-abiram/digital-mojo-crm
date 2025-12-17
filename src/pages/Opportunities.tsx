@@ -17,7 +17,7 @@ interface DraggableCardProps {
 }
 
 const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDelete }) => {
-    const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: item.id,
     });
 
@@ -25,72 +25,81 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     } : undefined;
 
+    // Handle click separately to avoid conflict with drag
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Only trigger edit if not dragging
+        if (!isDragging) {
+            onEdit(item);
+        }
+    };
+
     return (
         <div
             ref={setNodeRef}
             style={style}
-            {...listeners}
-            {...attributes}
-            onClick={() => onEdit(item)}
-            className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-grab relative group mb-3 z-10"
+            className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all relative group mb-3 z-10 ${isDragging ? 'opacity-50' : ''}`}
         >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex flex-col">
-                    <h4 className="font-bold text-gray-900 text-sm line-clamp-2">{item.name}</h4>
-                    {item.contactId && (
-                        <span
+            {/* Drag Handle - only this area is draggable */}
+            <div
+                {...listeners}
+                {...attributes}
+                className="absolute top-0 left-0 right-0 h-8 cursor-grab"
+            />
+
+            {/* Clickable Content Area */}
+            <div onClick={handleCardClick} className="cursor-pointer">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-col">
+                        <h4 className="font-bold text-gray-900 text-sm line-clamp-2">{item.name}</h4>
+                        {item.contactId && (
+                            <span
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.location.hash = `#/contacts/${item.contactId}`;
+                                }}
+                                className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1 mt-1"
+                            >
+                                <User size={10} /> {item.contactName || 'View Contact'}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 border border-gray-200">
+                            {item.owner ? item.owner.charAt(0).toUpperCase() : <User size={12} />}
+                        </div>
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.hash = `#/contacts/${item.contactId}`;
+                                onEdit(item);
                             }}
-                            className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1 mt-1"
+                            className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
                         >
-                            <User size={10} /> {item.contactName || 'View Contact'}
-                        </span>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 border border-gray-200">
-                        {item.owner ? item.owner.charAt(0).toUpperCase() : <User size={12} />}
+                            <MoreHorizontal size={16} />
+                        </button>
                     </div>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(item);
-                        }}
-                        className="text-gray-400 hover:text-gray-600 p-1 -mr-2"
-                    >
-                        <MoreHorizontal size={16} />
-                    </button>
                 </div>
-            </div>
 
-            {/* Body */}
-            <div className="space-y-2 mb-4">
-                <div className="flex text-xs">
-                    <span className="text-gray-500 w-28 shrink-0">Business Name:</span>
-                    <span className="text-gray-700 font-medium truncate">{item.companyName || '-'}</span>
-                </div>
-                {item.source && (
+                {/* Body */}
+                <div className="space-y-2 mb-4">
                     <div className="flex text-xs">
-                        <span className="text-gray-500 w-28 shrink-0">Source:</span>
-                        <span className="text-gray-700 font-medium truncate">{item.source}</span>
+                        <span className="text-gray-500 w-32 shrink-0">Business Name:</span>
+                        <span className="text-gray-700 font-medium truncate">{item.name}</span>
                     </div>
-                )}
-                <div className="flex text-xs">
-                    <span className="text-gray-500 w-28 shrink-0">Value:</span>
-                    <span className="text-gray-700 font-medium">₹{Number(item.value).toLocaleString()}</span>
+                    <div className="flex text-xs">
+                        <span className="text-gray-500 w-32 shrink-0">Opportunity Value:</span>
+                        <span className="text-gray-700 font-medium">₹{Number(item.value).toLocaleString()}</span>
+                    </div>
                 </div>
-            </div>
 
-            {/* Footer Icons */}
-            <div className="flex gap-4 text-gray-400 border-t border-gray-100 pt-3">
-                <Phone size={14} className="hover:text-primary cursor-pointer" />
-                <MessageSquare size={14} className="hover:text-primary cursor-pointer" />
-                <CheckSquare size={14} className="hover:text-primary cursor-pointer" />
-                <FileText size={14} className="hover:text-primary cursor-pointer" />
-                <Calendar size={14} className="hover:text-primary cursor-pointer" />
+                {/* Footer Icons */}
+                <div className="flex gap-4 text-gray-400 border-t border-gray-100 pt-3">
+                    <Phone size={14} className="hover:text-primary cursor-pointer" />
+                    <MessageSquare size={14} className="hover:text-primary cursor-pointer" />
+                    <CheckSquare size={14} className="hover:text-primary cursor-pointer" />
+                    <FileText size={14} className="hover:text-primary cursor-pointer" />
+                    <Calendar size={14} className="hover:text-primary cursor-pointer" />
+                </div>
             </div>
         </div>
     );
@@ -101,14 +110,48 @@ interface DroppableColumnProps {
     items: Opportunity[];
     onEdit: (opp: Opportunity) => void;
     onDelete: (id: string) => void;
+    hasMore: boolean;
+    onLoadMore: () => void;
+    isLoading?: boolean;
+    totalCount: number;
+    totalValue: number;
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit, onDelete }) => {
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit, onDelete, hasMore, onLoadMore, isLoading, totalCount, totalValue }) => {
     const { setNodeRef } = useDroppable({
         id: stage.id,
     });
 
-    const totalValue = items.reduce((sum, item) => sum + Number(item.value), 0);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Infinite scroll using IntersectionObserver
+    useEffect(() => {
+        const loadMoreElement = loadMoreRef.current;
+        const scrollContainer = scrollContainerRef.current;
+
+        if (!loadMoreElement || !scrollContainer) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && hasMore && !isLoading) {
+                    onLoadMore();
+                }
+            },
+            {
+                root: scrollContainer,
+                rootMargin: '100px',
+                threshold: 0.1
+            }
+        );
+
+        observer.observe(loadMoreElement);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [hasMore, onLoadMore, isLoading]);
 
     return (
         <div ref={setNodeRef} className="w-80 flex flex-col h-full">
@@ -117,26 +160,34 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
                     <div>
                         <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide">{stage.title}</h3>
                         <p className="text-xs text-gray-500 mt-1">
-                            {items.length} Opportunities <span className="font-bold text-gray-700 ml-1">₹{totalValue.toLocaleString()}</span>
+                            {totalCount} Opportunities <span className="font-bold text-gray-700 ml-1">₹{totalValue.toLocaleString()}</span>
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar min-h-[100px] pr-1 pb-2">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar min-h-[100px] pr-1 pb-2">
                 {items.map(item => (
                     <DraggableCard key={item.id} item={item} color={stage.color} onEdit={onEdit} onDelete={onDelete} />
                 ))}
+                {/* Sentinel element for infinite scroll */}
+                <div ref={loadMoreRef} className="h-4">
+                    {isLoading && hasMore && (
+                        <div className="flex justify-center py-2">
+                            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
 const Opportunities: React.FC = () => {
-    const { opportunities, stages, fetchOpportunities, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities } = useStore();
+    const { opportunities, stages, stageCounts, fetchOpportunities, fetchStageCounts, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities, isLoading } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
-    const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
+    const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('Contact Info');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -180,7 +231,8 @@ const Opportunities: React.FC = () => {
     useEffect(() => {
         fetchOpportunities();
         fetchContacts();
-    }, [fetchOpportunities, fetchContacts, currentUser]);
+        fetchStageCounts();
+    }, [fetchOpportunities, fetchContacts, fetchStageCounts, currentUser]);
 
     useEffect(() => {
         setTempStages(stages);
@@ -194,6 +246,40 @@ const Opportunities: React.FC = () => {
         stage: '',
         status: ''
     });
+
+    // List view infinite scroll refs
+    const listScrollContainerRef = useRef<HTMLDivElement>(null);
+    const listLoadMoreRef = useRef<HTMLTableRowElement>(null);
+
+    // List view infinite scroll
+    useEffect(() => {
+        if (viewMode !== 'list') return;
+
+        const loadMoreElement = listLoadMoreRef.current;
+        const scrollContainer = listScrollContainerRef.current;
+
+        if (!loadMoreElement || !scrollContainer) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && hasMoreOpportunities && !isLoading) {
+                    loadMoreOpportunities();
+                }
+            },
+            {
+                root: scrollContainer,
+                rootMargin: '100px',
+                threshold: 0.1
+            }
+        );
+
+        observer.observe(loadMoreElement);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [viewMode, hasMoreOpportunities, loadMoreOpportunities, isLoading]);
 
     const visibleOpportunities = useMemo(() => {
         return opportunities.filter(opp => {
@@ -822,26 +908,21 @@ const Opportunities: React.FC = () => {
                                             items={visibleOpportunities.filter(o => o.stage === stage.id)}
                                             onEdit={handleOpenModal}
                                             onDelete={handleDelete}
+                                            hasMore={hasMoreOpportunities}
+                                            onLoadMore={loadMoreOpportunities}
+                                            isLoading={isLoading}
+                                            totalCount={stageCounts[stage.id]?.count || 0}
+                                            totalValue={stageCounts[stage.id]?.value || 0}
                                         />
                                     ))}
                                 </div>
                             </div>
-                            {hasMoreOpportunities && (
-                                <div className="absolute bottom-4 right-4 z-20">
-                                    <button
-                                        onClick={() => loadMoreOpportunities()}
-                                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-lg text-primary font-bold hover:bg-gray-50 flex items-center gap-2"
-                                    >
-                                        <Download size={16} /> Load More
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </DndContext>
                 ) : (
                     // List View
                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
-                        <div className="overflow-auto flex-1">
+                        <div ref={listScrollContainerRef} className="overflow-auto flex-1">
                             <table className="w-full text-sm text-left text-gray-500">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                                     <tr>
@@ -925,21 +1006,27 @@ const Opportunities: React.FC = () => {
                                             </td>
                                         </tr>
                                     ))}
+                                    {/* Sentinel row for infinite scroll */}
+                                    <tr ref={listLoadMoreRef}>
+                                        <td colSpan={14} className="h-4">
+                                            {isLoading && hasMoreOpportunities && (
+                                                <div className="flex justify-center py-4">
+                                                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
-                            <span>Showing {opportunities.length} opportunities</span>
-                            <div className="flex gap-2">
-                                {hasMoreOpportunities && (
-                                    <button
-                                        onClick={() => loadMoreOpportunities()}
-                                        className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 text-gray-700"
-                                    >
-                                        Load More
-                                    </button>
-                                )}
-                            </div>
+                            <span>Showing {opportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
+                            {isLoading && (
+                                <div className="flex items-center gap-2 text-primary">
+                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Loading...</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
