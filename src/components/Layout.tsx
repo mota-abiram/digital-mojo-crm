@@ -99,10 +99,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex-col bg-[#2d323c] text-white transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex-col bg-sidebar text-white transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-6">
           <div className="flex items-center gap-2">
-            <svg className="h-8 w-8 text-[#05acd6]" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="h-8 w-8 text-brand-blue" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
             </svg>
             <h1 className="text-lg font-bold tracking-tight">Digital-Mojo</h1>
@@ -202,7 +202,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors relative">
                 <Bell size={20} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white dark:border-gray-800"></span>
+                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-orange border-2 border-white dark:border-gray-800"></span>
                 )}
               </button>
               <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">

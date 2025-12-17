@@ -126,14 +126,14 @@ export const useStore = create<AppState>((set, get) => ({
     opportunities: [],
     stages: [
         { id: '0', title: '0 - Junk', color: '#808080' },
-        { id: '10', title: '10 - Closed', color: '#1ea34f' },
-        { id: '16', title: '16 - Yet to contact', color: '#f0bc00' },
-        { id: '17', title: '17 - Follow Later', color: '#754c9b' },
-        { id: '18', title: '18 - Luke Warm', color: '#ff8c00' },
-        { id: '19', title: '19 - Warm', color: '#ffa500' },
-        { id: '20', title: '20 - Hot', color: '#ff4500' },
-        { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },
-        { id: '21', title: '21 - Cheque Ready', color: '#006400' },
+        { id: '10', title: '10 - Closed', color: '#1ea34f' },  // brand-green
+        { id: '16', title: '16 - Yet to contact', color: '#f0bc00' },  // brand-yellow
+        { id: '17', title: '17 - Follow Later', color: '#754c9b' },  // brand-purple
+        { id: '18', title: '18 - Luke Warm', color: '#eb7311' },  // brand-orange
+        { id: '19', title: '19 - Warm', color: '#eb7311' },  // brand-orange
+        { id: '20', title: '20 - Hot', color: '#eb7311' },  // brand-orange (darker)
+        { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },  // brand-blue
+        { id: '21', title: '21 - Cheque Ready', color: '#1ea34f' },  // brand-green
     ],
     stageCounts: {},
     stagePagination: {},

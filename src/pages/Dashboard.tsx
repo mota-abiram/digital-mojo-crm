@@ -85,32 +85,32 @@ const Dashboard: React.FC = () => {
             value: dashboardStats.totalOpportunities.toString(),
             subtext: `${dashboardStats.openOpportunities} Open`,
             icon: Target,
-            color: 'text-blue-600',
-            bgColor: 'bg-blue-50'
+            color: 'text-brand-blue',
+            bgColor: 'bg-brand-blue/10'
           },
           {
             label: 'Pipeline Value',
             value: `₹${dashboardStats.totalPipelineValue.toLocaleString()}`,
             subtext: 'Total value',
             icon: IndianRupee,
-            color: 'text-green-600',
-            bgColor: 'bg-green-50'
+            color: 'text-brand-green',
+            bgColor: 'bg-brand-green/10'
           },
           {
             label: 'Conversion Rate',
             value: `${dashboardStats.conversionRate.toFixed(1)}%`,
             subtext: 'Won / Total',
             icon: TrendingUp,
-            color: 'text-purple-600',
-            bgColor: 'bg-purple-50'
+            color: 'text-brand-purple',
+            bgColor: 'bg-brand-purple/10'
           },
           {
             label: 'Closed Won',
             value: dashboardStats.wonOpportunities.toString(),
             subtext: `${dashboardStats.lostOpportunities} Lost`,
             icon: CheckCircle,
-            color: 'text-emerald-600',
-            bgColor: 'bg-emerald-50'
+            color: 'text-brand-green',
+            bgColor: 'bg-brand-green/10'
           },
         ].map((stat, idx) => (
           <div key={idx} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between">
