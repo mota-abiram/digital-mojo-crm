@@ -360,6 +360,21 @@ export const useStore = create<AppState>((set, get) => ({
         }));
     },
     deleteContact: async (id) => {
+        // First, find and delete any opportunities linked to this contact
+        const linkedOpportunities = get().opportunities.filter(o => o.contactId === id);
+        for (const opp of linkedOpportunities) {
+            await api.opportunities.delete(opp.id);
+        }
+        // Update local state to remove deleted opportunities
+        if (linkedOpportunities.length > 0) {
+            set((state) => ({
+                opportunities: state.opportunities.filter((o) => o.contactId !== id),
+            }));
+            // Refresh stage counts after deleting opportunities
+            get().fetchStageCounts();
+        }
+
+        // Now delete the contact
         await api.contacts.delete(id);
         set((state) => ({
             contacts: state.contacts.filter((c) => c.id !== id),

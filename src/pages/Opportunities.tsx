@@ -90,12 +90,24 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                 </div>
 
                 {/* Footer Icons */}
-                <div className="flex gap-4 text-gray-400 border-t border-gray-100 pt-3">
-                    <Phone size={14} className="hover:text-brand-blue cursor-pointer" />
-                    <MessageSquare size={14} className="hover:text-brand-blue cursor-pointer" />
-                    <CheckSquare size={14} className="hover:text-brand-blue cursor-pointer" />
-                    <FileText size={14} className="hover:text-brand-blue cursor-pointer" />
-                    <Calendar size={14} className="hover:text-brand-blue cursor-pointer" />
+                <div className="flex justify-between items-center border-t border-gray-100 pt-3">
+                    <div className="flex gap-4 text-gray-400">
+                        <Phone size={14} className="hover:text-brand-blue cursor-pointer" />
+                        <MessageSquare size={14} className="hover:text-brand-blue cursor-pointer" />
+                        <CheckSquare size={14} className="hover:text-brand-blue cursor-pointer" />
+                        <FileText size={14} className="hover:text-brand-blue cursor-pointer" />
+                        <Calendar size={14} className="hover:text-brand-blue cursor-pointer" />
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(item.id);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete Opportunity"
+                    >
+                        <Trash2 size={14} />
+                    </button>
                 </div>
             </div>
         </div>
@@ -790,12 +802,6 @@ const Opportunities: React.FC = () => {
                             className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2"
                         >
                             <Download size={16} /> Export
-                        </button>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="px-4 py-2 bg-primary text-black rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
-                        >
-                            <Plus size={18} /> Add opportunity
                         </button>
                     </div>
                 </div>
