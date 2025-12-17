@@ -399,7 +399,7 @@ const Contacts: React.FC = () => {
                     <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm">Export</button>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
+                        className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
                     >
                         <Plus size={18} /> New Contact
                     </button>
@@ -505,7 +505,7 @@ const Contacts: React.FC = () => {
                                         type="checkbox"
                                         checked={filteredContacts.length > 0 && selectedIds.size === filteredContacts.length}
                                         onChange={handleSelectAll}
-                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                        className="rounded border-gray-300 text-brand-blue focus:ring-primary"
                                     />
                                 </th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Name</th>
@@ -532,12 +532,12 @@ const Contacts: React.FC = () => {
                                                     type="checkbox"
                                                     checked={selectedIds.has(contact.id)}
                                                     onChange={() => handleSelectOne(contact.id)}
-                                                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                    className="rounded border-gray-300 text-brand-blue focus:ring-primary"
                                                 />
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-brand-blue flex items-center justify-center font-bold text-xs">
                                                         {contact.name.charAt(0)}
                                                     </div>
                                                     <span className="font-medium text-gray-900">{contact.name}</span>
@@ -574,7 +574,7 @@ const Contacts: React.FC = () => {
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={() => handleOpenModal(contact)}
-                                                        className="p-1 text-gray-400 hover:text-primary rounded"
+                                                        className="p-1 text-gray-400 hover:text-brand-blue rounded"
                                                         title="Edit"
                                                     >
                                                         <Edit size={16} />
@@ -736,7 +736,7 @@ const Contacts: React.FC = () => {
                         </button>
                         <button
                             onClick={handleSubmit}
-                            className="text-white bg-primary hover:bg-primary/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5"
+                            className="text-black bg-primary hover:bg-primary/90 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5"
                         >
                             {editingId ? 'Update Contact' : 'Save Contact'}
                         </button>

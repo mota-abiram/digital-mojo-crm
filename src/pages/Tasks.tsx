@@ -85,7 +85,7 @@ const Tasks: React.FC = () => {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-primary text-gray-900 shadow-sm' : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {f}
@@ -117,8 +117,8 @@ const Tasks: React.FC = () => {
                                 <button
                                     onClick={() => handleToggleTask(task)}
                                     className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${task.isCompleted
-                                            ? 'bg-primary border-primary text-white'
-                                            : 'border-gray-300 hover:border-primary text-transparent'
+                                        ? 'bg-primary border-primary text-black'
+                                        : 'border-gray-300 hover:border-primary text-transparent'
                                         }`}
                                 >
                                     <CheckSquare size={14} fill="currentColor" />

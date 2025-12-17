@@ -158,7 +158,7 @@ const Profile: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
                             >
                                 {isLoading ? (
                                     <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />

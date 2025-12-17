@@ -30,7 +30,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand-blue" />
           <p className="text-gray-500">Loading dashboard data...</p>
         </div>
       </div>

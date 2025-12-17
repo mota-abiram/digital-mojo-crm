@@ -117,7 +117,7 @@ const Settings: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all"
+                    className="flex items-center gap-2 bg-primary text-black px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all"
                 >
                     <Save size={18} />
                     Save Changes
@@ -131,7 +131,7 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('pipelines')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'pipelines'
-                                ? 'border-primary bg-primary/5 text-primary'
+                                ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
@@ -140,7 +140,7 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('team')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'team'
-                                ? 'border-primary bg-primary/5 text-primary'
+                                ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
@@ -149,7 +149,7 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('profile')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'profile'
-                                ? 'border-primary bg-primary/5 text-primary'
+                                ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
@@ -158,7 +158,7 @@ const Settings: React.FC = () => {
                         <button
                             onClick={() => setActiveTab('cleanup')}
                             className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'cleanup'
-                                ? 'border-primary bg-primary/5 text-primary'
+                                ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
@@ -178,7 +178,7 @@ const Settings: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={handleAddStage}
-                                    className="text-primary hover:bg-primary/10 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
+                                    className="text-black hover:bg-primary/10 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1"
                                 >
                                     <Plus size={16} /> Add Stage
                                 </button>

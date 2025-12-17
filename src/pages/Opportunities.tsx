@@ -58,7 +58,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                                     e.stopPropagation();
                                     window.location.hash = `#/contacts/${item.contactId}`;
                                 }}
-                                className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1 mt-1"
+                                className="text-xs text-brand-blue hover:underline cursor-pointer flex items-center gap-1 mt-1"
                             >
                                 <User size={10} /> {item.contactName || 'View Contact'}
                             </span>
@@ -91,11 +91,11 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
 
                 {/* Footer Icons */}
                 <div className="flex gap-4 text-gray-400 border-t border-gray-100 pt-3">
-                    <Phone size={14} className="hover:text-primary cursor-pointer" />
-                    <MessageSquare size={14} className="hover:text-primary cursor-pointer" />
-                    <CheckSquare size={14} className="hover:text-primary cursor-pointer" />
-                    <FileText size={14} className="hover:text-primary cursor-pointer" />
-                    <Calendar size={14} className="hover:text-primary cursor-pointer" />
+                    <Phone size={14} className="hover:text-brand-blue cursor-pointer" />
+                    <MessageSquare size={14} className="hover:text-brand-blue cursor-pointer" />
+                    <CheckSquare size={14} className="hover:text-brand-blue cursor-pointer" />
+                    <FileText size={14} className="hover:text-brand-blue cursor-pointer" />
+                    <Calendar size={14} className="hover:text-brand-blue cursor-pointer" />
                 </div>
             </div>
         </div>
@@ -753,14 +753,14 @@ const Opportunities: React.FC = () => {
                         <div className="bg-white border border-gray-300 rounded-lg p-1 flex">
                             <button
                                 onClick={() => setViewMode('board')}
-                                className={`p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
                                 title="Board View"
                             >
                                 <LayoutGrid size={20} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
                                 title="List View"
                             >
                                 <ListIcon size={20} />
@@ -793,7 +793,7 @@ const Opportunities: React.FC = () => {
                         </button>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
+                            className="px-4 py-2 bg-primary text-black rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-sm"
                         >
                             <Plus size={18} /> Add opportunity
                         </button>
@@ -836,7 +836,7 @@ const Opportunities: React.FC = () => {
                     <div className="relative">
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-primary text-primary' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-primary text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                         >
                             <Filter size={18} /> Filters {(Object.values(filters).some(Boolean)) && <span className="w-2 h-2 rounded-full bg-primary mb-2"></span>}
                         </button>
@@ -930,7 +930,7 @@ const Opportunities: React.FC = () => {
                                                 type="checkbox"
                                                 checked={selectedIds.size === visibleOpportunities.length && visibleOpportunities.length > 0}
                                                 onChange={handleSelectAll}
-                                                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+                                                className="w-4 h-4 text-brand-blue bg-gray-100 border-gray-300 rounded focus:ring-primary"
                                             />
                                         </th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity</th>
@@ -956,10 +956,10 @@ const Opportunities: React.FC = () => {
                                                     type="checkbox"
                                                     checked={selectedIds.has(opp.id)}
                                                     onChange={() => handleSelectOne(opp.id)}
-                                                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                    className="rounded border-gray-300 text-brand-blue focus:ring-primary"
                                                 />
                                             </td>
-                                            <td className="p-4 font-medium text-primary">{opp.companyName || opp.name}</td>
+                                            <td className="p-4 font-medium text-brand-blue">{opp.companyName || opp.name}</td>
                                             <td className="p-4">
                                                 {opp.contactName ? (
                                                     <div className="flex items-center gap-2">
@@ -1021,7 +1021,7 @@ const Opportunities: React.FC = () => {
                         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
                             <span>Showing {opportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
                             {isLoading && (
-                                <div className="flex items-center gap-2 text-primary">
+                                <div className="flex items-center gap-2 text-brand-blue">
                                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                                     <span>Loading...</span>
                                 </div>
@@ -1055,7 +1055,7 @@ const Opportunities: React.FC = () => {
                                             key={id}
                                             onClick={() => setActiveTab(id)}
                                             className={`px-6 py-4 text-left text-sm font-medium border-l-4 transition-colors ${activeTab === id || (id === 'opportunity-details' && activeTab === 'details')
-                                                ? 'bg-blue-50 border-primary text-primary'
+                                                ? 'bg-blue-50 border-primary text-brand-blue'
                                                 : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                                 }`}
                                         >
@@ -1251,7 +1251,7 @@ const Opportunities: React.FC = () => {
                                                             <label className="block text-sm font-medium text-gray-700">Notes</label>
                                                             <button
                                                                 onClick={() => setIsAddingNote(true)}
-                                                                className="text-xs text-primary font-medium hover:underline"
+                                                                className="text-xs text-brand-blue font-medium hover:underline"
                                                             >
                                                                 + Add Note
                                                             </button>
@@ -1267,7 +1267,7 @@ const Opportunities: React.FC = () => {
                                                                 />
                                                                 <div className="flex justify-end gap-2">
                                                                     <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                                    <button onClick={handleAddNote} className="px-2 py-1 text-xs text-white bg-primary rounded hover:bg-primary/90">Save</button>
+                                                                    <button onClick={handleAddNote} className="px-2 py-1 text-xs text-black bg-primary rounded hover:bg-primary/90">Save</button>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1338,7 +1338,7 @@ const Opportunities: React.FC = () => {
                                                 <div className="flex justify-end pt-4">
                                                     <button
                                                         onClick={handleBookAppointment}
-                                                        className="px-5 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30"
+                                                        className="px-5 py-2.5 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30"
                                                     >
                                                         Book Appointment
                                                     </button>
@@ -1365,7 +1365,7 @@ const Opportunities: React.FC = () => {
                                                                 setNewTaskTitle('');
                                                                 setIsAddingTask(true);
                                                             }}
-                                                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-primary font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
+                                                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
                                                         >
                                                             <Plus size={18} /> Add Task
                                                         </button>
@@ -1383,12 +1383,12 @@ const Opportunities: React.FC = () => {
                                                     <div className="flex-1 overflow-y-auto">
                                                         {tasks.length === 0 ? (
                                                             <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-primary">
+                                                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
                                                                     <CheckSquare size={32} />
                                                                 </div>
                                                                 <h4 className="text-gray-900 font-medium mb-1">No tasks found</h4>
                                                                 <p className="text-gray-500 text-sm mb-4">There are no tasks available</p>
-                                                                <button onClick={() => setIsAddingTask(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90">
+                                                                <button onClick={() => setIsAddingTask(true)} className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-medium hover:bg-primary/90">
                                                                     + Add New Task
                                                                 </button>
                                                             </div>
@@ -1397,7 +1397,7 @@ const Opportunities: React.FC = () => {
                                                                 {tasks.map(task => (
                                                                     <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
                                                                         <div className="flex items-center gap-3">
-                                                                            <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" />
+                                                                            <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-primary" />
                                                                             <div className="flex flex-col">
                                                                                 <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
                                                                                 {task.dueDate && (
@@ -1507,7 +1507,7 @@ const Opportunities: React.FC = () => {
                                                         </button>
                                                         <button
                                                             onClick={handleAddTask}
-                                                            className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90"
+                                                            className="px-4 py-2 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90"
                                                         >
                                                             Save
                                                         </button>
@@ -1530,7 +1530,7 @@ const Opportunities: React.FC = () => {
                                             <div className="mb-6">
                                                 <button
                                                     onClick={() => setIsAddingNote(true)}
-                                                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-primary font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
+                                                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <Plus size={18} /> Add Note
                                                 </button>
@@ -1547,7 +1547,7 @@ const Opportunities: React.FC = () => {
                                                     />
                                                     <div className="flex justify-end gap-2">
                                                         <button onClick={() => setIsAddingNote(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                        <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-white bg-primary rounded hover:bg-primary/90">Add Note</button>
+                                                        <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-black bg-primary rounded hover:bg-primary/90">Add Note</button>
                                                     </div>
                                                 </div>
                                             )}
@@ -1564,12 +1564,12 @@ const Opportunities: React.FC = () => {
                                             <div className="flex-1 overflow-y-auto">
                                                 {notes.length === 0 ? (
                                                     <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-primary">
+                                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
                                                             <MessageSquare size={32} />
                                                         </div>
                                                         <h4 className="text-gray-900 font-medium mb-1">No notes found</h4>
                                                         <p className="text-gray-500 text-sm mb-4">Your filters does not match any notes. Please try again.</p>
-                                                        <button onClick={() => setIsAddingNote(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90">
+                                                        <button onClick={() => setIsAddingNote(true)} className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-medium hover:bg-primary/90">
                                                             + Add Note
                                                         </button>
                                                     </div>
@@ -1605,7 +1605,7 @@ const Opportunities: React.FC = () => {
                                     <>
                                         <p>Created By: Digital Mojo</p>
                                         <p>Created on: {editingId && opportunities.find(o => o.id === editingId)?.createdAt ? format(new Date(opportunities.find(o => o.id === editingId)!.createdAt!), 'MMM d, yyyy h:mm a') : '-'} (IST)</p>
-                                        <a href="#" className="text-primary hover:underline flex items-center gap-1 mt-1">
+                                        <a href="#" className="text-brand-blue hover:underline flex items-center gap-1 mt-1">
                                             Audit Logs: {editingId} <Download size={12} />
                                         </a>
                                     </>
@@ -1622,7 +1622,7 @@ const Opportunities: React.FC = () => {
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="px-4 py-2 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>
@@ -1689,7 +1689,7 @@ const Opportunities: React.FC = () => {
                 </div>
                 <button
                     onClick={handleAddStage}
-                    className="mt-4 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+                    className="mt-4 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:border-primary hover:text-brand-blue transition-colors flex items-center justify-center gap-2"
                 >
                     <Plus size={20} /> Add Stage
                 </button>

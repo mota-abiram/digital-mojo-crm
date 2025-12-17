@@ -99,20 +99,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex-col bg-sidebar text-white transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-16 items-center justify-between border-b border-white/10 px-6">
-          <div className="flex items-center gap-2">
-            <svg className="h-8 w-8 text-brand-blue" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
-            </svg>
-            <h1 className="text-lg font-bold tracking-tight">Digital-Mojo</h1>
-          </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">
-            <X size={24} />
+      <aside className={`fixed inset-y-0 left-0 z-50 w-52 flex-col bg-[#1e2a3b] text-white transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex h-14 items-center gap-2 px-4 border-b border-white/5">
+          <img src="/dm.png" alt="Digital Mojo Logo" className="h-7 w-7 object-contain" />
+          <h1 className="text-base font-bold tracking-tight text-white">Digital-Mojo</h1>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden ml-auto text-gray-400 hover:text-white">
+            <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
+        <nav className="flex-1 flex flex-col gap-0.5 p-3 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -121,13 +117,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${isActive
-                  ? 'bg-primary/20 text-primary'
-                  : 'text-gray-400 hover:bg-white/10 hover:text-gray-100'
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 ${isActive
+                  ? 'bg-primary text-gray-900 font-semibold'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
                   }`}
               >
-                <Icon size={22} className={isActive ? "text-primary fill-current opacity-100" : ""} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-sm font-medium ${isActive ? 'text-white' : ''}`}>{item.label}</span>
+                <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                <span className="text-sm font-medium">{item.label}</span>
               </Link>
             );
           })}

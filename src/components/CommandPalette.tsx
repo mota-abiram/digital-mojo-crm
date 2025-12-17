@@ -70,7 +70,7 @@ const CommandPalette: React.FC = () => {
                                 <button
                                     key={page.path}
                                     onClick={() => handleSelect(page.path)}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-primary transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-brand-blue transition-colors text-left"
                                 >
                                     <page.icon size={18} />
                                     {page.name}
@@ -86,9 +86,9 @@ const CommandPalette: React.FC = () => {
                                 <button
                                     key={contact.id}
                                     onClick={() => handleSelect('/contacts')}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-primary transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-brand-blue transition-colors text-left"
                                 >
-                                    <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 text-brand-blue flex items-center justify-center text-xs font-bold">
                                         {contact.name.charAt(0)}
                                     </div>
                                     {contact.name}
@@ -105,7 +105,7 @@ const CommandPalette: React.FC = () => {
                                 <button
                                     key={opp.id}
                                     onClick={() => handleSelect('/opportunities')}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-primary transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 hover:text-brand-blue transition-colors text-left"
                                 >
                                     <Target size={18} className="text-gray-400" />
                                     {opp.name}

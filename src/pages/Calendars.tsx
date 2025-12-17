@@ -400,7 +400,7 @@ const Calendars: React.FC = () => {
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                        className="bg-primary hover:bg-primary/90 text-black px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
                     >
                         <Plus size={18} /> New Appointment
                     </button>
@@ -429,7 +429,7 @@ const Calendars: React.FC = () => {
                                     <div key={i} className={`py-1.5 ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}`}>
                                         <button
                                             onClick={() => setCurrentDate(day)}
-                                            className={`w-7 h-7 flex items-center justify-center rounded-full mx-auto ${isSelected ? 'bg-primary text-white' : 'hover:bg-gray-100'}`}
+                                            className={`w-7 h-7 flex items-center justify-center rounded-full mx-auto ${isSelected ? 'bg-primary text-gray-900' : 'hover:bg-gray-100'}`}
                                         >
                                             {format(day, 'd')}
                                         </button>
@@ -506,7 +506,7 @@ const Calendars: React.FC = () => {
                                                 setView('Day');
                                             }}
                                         >
-                                            <div className={`text-sm font-medium mb-1 ${isSameDay(day, new Date()) ? 'text-primary bg-primary/10 w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
+                                            <div className={`text-sm font-medium mb-1 ${isSameDay(day, new Date()) ? 'text-brand-blue bg-primary/10 w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
                                                 {format(day, 'd')}
                                             </div>
                                             <div className="space-y-1">
@@ -539,8 +539,8 @@ const Calendars: React.FC = () => {
                                 <div className="col-span-1 border-r border-gray-100"></div>
                                 {weekDays.map((day, i) => (
                                     <div key={i} className={`col-span-1 text-center py-3 border-r border-gray-100 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
-                                        <div className={`text-xs font-semibold ${isSameDay(day, new Date()) ? 'text-primary' : 'text-gray-500'}`}>{format(day, 'EEE').toUpperCase()}</div>
-                                        <div className={`text-xl font-light mt-1 ${isSameDay(day, new Date()) ? 'text-primary font-bold' : 'text-gray-800'}`}>{format(day, 'd')}</div>
+                                        <div className={`text-xs font-semibold ${isSameDay(day, new Date()) ? 'text-brand-blue' : 'text-gray-500'}`}>{format(day, 'EEE').toUpperCase()}</div>
+                                        <div className={`text-xl font-light mt-1 ${isSameDay(day, new Date()) ? 'text-brand-blue font-bold' : 'text-gray-800'}`}>{format(day, 'd')}</div>
                                     </div>
                                 ))}
                             </div>
@@ -563,7 +563,7 @@ const Calendars: React.FC = () => {
                                                         <div
                                                             key={apt.id}
                                                             onClick={(e) => { e.stopPropagation(); handleOpenModal(apt); }}
-                                                            className="absolute inset-1 bg-primary text-white p-1 rounded text-xs overflow-hidden z-10 shadow-sm cursor-pointer hover:bg-primary/90"
+                                                            className="absolute inset-1 bg-primary text-gray-900 p-1 rounded text-xs overflow-hidden z-10 shadow-sm cursor-pointer hover:bg-primary/90"
                                                         >
                                                             <div className="font-bold">{apt.title}</div>
                                                             <div className="opacity-80">{apt.time}</div>
@@ -599,7 +599,7 @@ const Calendars: React.FC = () => {
                                                     <div
                                                         key={apt.id}
                                                         onClick={(e) => { e.stopPropagation(); handleOpenModal(apt); }}
-                                                        className="absolute inset-x-2 top-1 bottom-1 bg-primary text-white p-2 rounded-lg text-sm overflow-hidden z-10 shadow-md cursor-pointer hover:bg-primary/90 flex flex-col justify-center"
+                                                        className="absolute inset-x-2 top-1 bottom-1 bg-primary text-gray-900 p-2 rounded-lg text-sm overflow-hidden z-10 shadow-md cursor-pointer hover:bg-primary/90 flex flex-col justify-center"
                                                     >
                                                         <div className="font-bold text-base">{apt.title}</div>
                                                         <div className="opacity-90 flex items-center gap-2">
