@@ -98,6 +98,44 @@ export const api = {
                 tags: arrayUnion(...tags)
             }));
             await Promise.all(promises);
+        },
+        // Remove duplicate contacts based on email or name
+        removeDuplicates: async () => {
+            const q = query(collection(db, 'contacts'));
+            const querySnapshot = await getDocs(q);
+            const contacts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Sort by createdAt to keep the oldest
+            contacts.sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateA - dateB;
+            });
+
+            const seen = new Map<string, string>(); // key -> id to keep
+            const duplicateIds: string[] = [];
+
+            contacts.forEach((contact: any) => {
+                // Create a unique key based on email (primary) or name
+                const email = (contact.email || '').toLowerCase().trim();
+                const name = (contact.name || '').toLowerCase().trim();
+                const key = email || name;
+
+                if (key && seen.has(key)) {
+                    // This is a duplicate
+                    duplicateIds.push(contact.id);
+                } else if (key) {
+                    seen.set(key, contact.id);
+                }
+            });
+
+            // Delete duplicates
+            if (duplicateIds.length > 0) {
+                const promises = duplicateIds.map(id => deleteDoc(doc(db, 'contacts', id)));
+                await Promise.all(promises);
+            }
+
+            return { removed: duplicateIds.length, kept: seen.size };
         }
     },
     opportunities: {
@@ -304,6 +342,44 @@ export const api = {
                 },
                 allOpportunities: filteredOpportunities
             };
+        },
+        // Remove duplicate opportunities based on name + contactId
+        removeDuplicates: async () => {
+            const q = query(collection(db, 'opportunities'));
+            const querySnapshot = await getDocs(q);
+            const opportunities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Sort by createdAt to keep the oldest
+            opportunities.sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateA - dateB;
+            });
+
+            const seen = new Map<string, string>(); // key -> id to keep
+            const duplicateIds: string[] = [];
+
+            opportunities.forEach((opp: any) => {
+                // Create a unique key based on name + contactId (or just name if no contact)
+                const name = (opp.name || '').toLowerCase().trim();
+                const contactId = opp.contactId || '';
+                const key = `${name}_${contactId}`;
+
+                if (name && seen.has(key)) {
+                    // This is a duplicate
+                    duplicateIds.push(opp.id);
+                } else if (name) {
+                    seen.set(key, opp.id);
+                }
+            });
+
+            // Delete duplicates
+            if (duplicateIds.length > 0) {
+                const promises = duplicateIds.map(id => deleteDoc(doc(db, 'opportunities', id)));
+                await Promise.all(promises);
+            }
+
+            return { removed: duplicateIds.length, kept: seen.size };
         }
     },
     appointments: {

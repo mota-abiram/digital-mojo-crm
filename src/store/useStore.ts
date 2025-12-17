@@ -73,6 +73,10 @@ interface AppState {
     } | null;
     fetchDashboardStats: (daysBack: number) => Promise<void>;
 
+    // Data Cleanup
+    removeDuplicateContacts: () => Promise<{ removed: number; kept: number }>;
+    removeDuplicateOpportunities: () => Promise<{ removed: number; kept: number }>;
+
     // Google Integration
     googleToken: string | null;
     setGoogleToken: (token: string | null) => void;
@@ -249,6 +253,21 @@ export const useStore = create<AppState>((set, get) => ({
 
     googleToken: null,
     setGoogleToken: (token) => set({ googleToken: token }),
+
+    // Data Cleanup Functions
+    removeDuplicateContacts: async () => {
+        const result = await api.contacts.removeDuplicates();
+        // Refresh contacts after cleanup
+        get().fetchContacts();
+        return result;
+    },
+    removeDuplicateOpportunities: async () => {
+        const result = await api.opportunities.removeDuplicates();
+        // Refresh opportunities and counts after cleanup
+        get().fetchOpportunities();
+        get().fetchStageCounts();
+        return result;
+    },
 
     isLoading: false,
     lastContactDoc: null,

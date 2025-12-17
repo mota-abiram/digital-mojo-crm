@@ -52,9 +52,11 @@ const SortableStageItem: React.FC<SortableStageItemProps> = ({ stage, onRemove, 
 };
 
 const Settings: React.FC = () => {
-    const { stages, updateStages } = useStore();
+    const { stages, updateStages, removeDuplicateContacts, removeDuplicateOpportunities } = useStore();
     const [localStages, setLocalStages] = useState(stages);
     const [activeTab, setActiveTab] = useState('pipelines');
+    const [isCleaningContacts, setIsCleaningContacts] = useState(false);
+    const [isCleaningOpportunities, setIsCleaningOpportunities] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -153,6 +155,15 @@ const Settings: React.FC = () => {
                         >
                             Company Profile
                         </button>
+                        <button
+                            onClick={() => setActiveTab('cleanup')}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'cleanup'
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-transparent text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            Data Cleanup
+                        </button>
                     </div>
                 </div>
 
@@ -215,6 +226,99 @@ const Settings: React.FC = () => {
                             </div>
                             <h3 className="text-lg font-medium text-gray-900">Company Profile</h3>
                             <p className="text-gray-500 mt-2">Manage company details and branding (Coming Soon)</p>
+                        </div>
+                    )}
+
+                    {activeTab === 'cleanup' && (
+                        <div className="max-w-2xl">
+                            <div className="mb-6">
+                                <h2 className="text-xl font-bold text-gray-900">Data Cleanup</h2>
+                                <p className="text-sm text-gray-500 mt-1">Remove duplicate records from your database</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Remove Duplicate Contacts */}
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="font-medium text-gray-900">Remove Duplicate Contacts</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Finds contacts with the same email or name and removes duplicates, keeping the oldest record.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setIsCleaningContacts(true);
+                                                try {
+                                                    const result = await removeDuplicateContacts();
+                                                    toast.success(`Removed ${result.removed} duplicate contacts. ${result.kept} unique contacts remain.`);
+                                                } catch (error) {
+                                                    toast.error('Failed to remove duplicate contacts');
+                                                }
+                                                setIsCleaningContacts(false);
+                                            }}
+                                            disabled={isCleaningContacts}
+                                            className="px-4 py-2 bg-brand-orange text-white rounded-lg font-medium hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {isCleaningContacts ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Cleaning...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 size={16} />
+                                                    Clean Contacts
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Remove Duplicate Opportunities */}
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="font-medium text-gray-900">Remove Duplicate Opportunities</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Finds opportunities with the same name and linked contact, and removes duplicates, keeping the oldest record.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setIsCleaningOpportunities(true);
+                                                try {
+                                                    const result = await removeDuplicateOpportunities();
+                                                    toast.success(`Removed ${result.removed} duplicate opportunities. ${result.kept} unique opportunities remain.`);
+                                                } catch (error) {
+                                                    toast.error('Failed to remove duplicate opportunities');
+                                                }
+                                                setIsCleaningOpportunities(false);
+                                            }}
+                                            disabled={isCleaningOpportunities}
+                                            className="px-4 py-2 bg-brand-orange text-white rounded-lg font-medium hover:bg-brand-orange/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {isCleaningOpportunities ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Cleaning...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 size={16} />
+                                                    Clean Opportunities
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
+                                    <p className="text-sm text-yellow-800">
+                                        <strong>Warning:</strong> This action cannot be undone. Make sure you have a backup of your data before proceeding.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
