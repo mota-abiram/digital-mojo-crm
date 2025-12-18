@@ -803,6 +803,12 @@ const Opportunities: React.FC = () => {
                         >
                             <Download size={16} /> Export
                         </button>
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-bold hover:bg-primary/90 shadow-sm flex items-center gap-2"
+                        >
+                            <Plus size={16} /> Add Opportunity
+                        </button>
                     </div>
                 </div>
 

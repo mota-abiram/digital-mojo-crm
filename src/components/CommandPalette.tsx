@@ -34,7 +34,6 @@ const CommandPalette: React.FC = () => {
         { name: 'Launchpad', path: '/', icon: Rocket },
         { name: 'Conversations', path: '/conversations', icon: MessageSquare },
         { name: 'Calendars', path: '/calendars', icon: Calendar },
-        { name: 'Contacts', path: '/contacts', icon: User },
         { name: 'Opportunities', path: '/opportunities', icon: Target },
     ].filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
 

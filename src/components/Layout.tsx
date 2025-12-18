@@ -82,7 +82,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/calendars', icon: CalendarDays, label: 'Calendars' },
-    { path: '/contacts', icon: Users, label: 'Contacts' },
     { path: '/opportunities', icon: Target, label: 'Opportunities' },
     { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { path: '/settings', icon: Settings, label: 'Settings' },

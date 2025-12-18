@@ -10,7 +10,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Calendars from './pages/Calendars';
-import Contacts from './pages/Contacts';
+// Contacts page removed from navigation
 import Opportunities from './pages/Opportunities';
 import Tasks from './pages/Tasks';
 import Settings from './pages/Settings';
@@ -50,8 +50,7 @@ const App: React.FC = () => {
           <Route element={<Layout><Outlet /></Layout>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/calendars" element={<Calendars />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/contacts/:id" element={<Contacts />} />
+            {/* Contacts routes removed */}
             <Route path="/opportunities" element={<Opportunities />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/settings" element={<Settings />} />
