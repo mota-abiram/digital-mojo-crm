@@ -89,15 +89,8 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                     </div>
                 </div>
 
-                {/* Footer Icons */}
-                <div className="flex justify-between items-center border-t border-gray-100 pt-3">
-                    <div className="flex gap-4 text-gray-400">
-                        <Phone size={14} className="hover:text-brand-blue cursor-pointer" />
-                        <MessageSquare size={14} className="hover:text-brand-blue cursor-pointer" />
-                        <CheckSquare size={14} className="hover:text-brand-blue cursor-pointer" />
-                        <FileText size={14} className="hover:text-brand-blue cursor-pointer" />
-                        <Calendar size={14} className="hover:text-brand-blue cursor-pointer" />
-                    </div>
+                {/* Footer */}
+                <div className="flex justify-end items-center border-t border-gray-100 pt-3">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

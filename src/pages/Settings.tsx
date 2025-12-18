@@ -117,8 +117,7 @@ const Settings: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-primary text-black px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all"
-                >
+                    className="flex items-center gap-2 bg-primary text-black px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all">
                     <Save size={18} />
                     Save Changes
                 </button>
@@ -136,24 +135,6 @@ const Settings: React.FC = () => {
                                 }`}
                         >
                             Pipeline Settings
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('team')}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'team'
-                                ? 'border-primary bg-primary/5 text-black'
-                                : 'border-transparent text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            Team Management
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('profile')}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'profile'
-                                ? 'border-primary bg-primary/5 text-black'
-                                : 'border-transparent text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            Company Profile
                         </button>
                         <button
                             onClick={() => setActiveTab('cleanup')}

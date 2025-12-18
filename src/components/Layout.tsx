@@ -101,12 +101,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 ${isActive
-                  ? 'bg-primary text-gray-900 font-semibold'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                    ? 'bg-primary text-black font-semibold'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
               >
-                <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                <span className="text-sm font-medium">{item.label}</span>
+                <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className={isActive ? 'text-white' : ''} />
+                <span className={`font-medium ${isActive ? 'text-black' : 'text-white'}`}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
