@@ -445,7 +445,6 @@ const Opportunities: React.FC = () => {
                         type: '',
                         companyName: formData.name,
                         owner: currentUser?.id || 'Unknown',
-                        tags: [],
                         Value: formData.contactValue
                     });
                     finalContactId = newContact.id;
