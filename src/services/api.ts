@@ -275,15 +275,28 @@ export const api = {
             const allOpportunities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
 
             const now = new Date();
-            const pastDate = new Date();
-            pastDate.setDate(now.getDate() - daysBack);
-            pastDate.setHours(0, 0, 0, 0);
+            now.setHours(23, 59, 59, 999); // End of today
 
-            // Filter by time range
+            const pastDate = new Date();
+            // For "Today" (daysBack=1), we want just today, so subtract (daysBack - 1) = 0 days
+            // For "Last 7 Days" (daysBack=7), we want today and 6 previous days, so subtract 6 days
+            // For "Last 30 Days" (daysBack=30), we want today and 29 previous days, so subtract 29 days
+            pastDate.setDate(now.getDate() - (daysBack - 1));
+            pastDate.setHours(0, 0, 0, 0); // Start of the first day
+
+            // Filter by time range - strictly filter by createdAt
             const filteredOpportunities = allOpportunities.filter(opp => {
+                // Exclude opportunities without createdAt for accurate filtering
                 if (!opp.createdAt) return false;
-                const oppDate = new Date(opp.createdAt);
-                return oppDate >= pastDate;
+
+                try {
+                    const oppDate = new Date(opp.createdAt);
+                    // Check if date is valid
+                    if (isNaN(oppDate.getTime())) return false;
+                    return oppDate >= pastDate && oppDate <= now;
+                } catch {
+                    return false; // Exclude if date parsing fails
+                }
             });
 
             // Calculate stats

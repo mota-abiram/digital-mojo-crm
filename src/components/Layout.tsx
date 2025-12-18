@@ -2,24 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  MessageSquare,
   CalendarDays,
-  Users,
   Target,
   Search,
-  Phone,
-  MessageCircle,
-  Bell,
-  HelpCircle,
   ChevronDown,
-  Moon,
-  Sun,
-  Menu,
+  CheckSquare,
   X,
   LogOut,
   User as UserIcon,
-  CheckSquare,
-  Settings
+  Settings,
+  Menu
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import CommandPalette from './CommandPalette';
@@ -31,8 +23,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { contacts, opportunities, notifications, fetchNotifications, currentUser, logout } = useStore();
-  const [darkMode, setDarkMode] = useState(false);
+  const { contacts, opportunities, currentUser, logout } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -40,14 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
-  };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -179,30 +163,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="flex items-center gap-1 md:gap-2">
-              <button
-                onClick={toggleDarkMode}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
-              >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-              <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
-                <Phone size={20} />
-              </button>
-              <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
-                <MessageCircle size={20} />
-              </button>
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors relative">
-                <Bell size={20} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-orange border-2 border-white dark:border-gray-800"></span>
-                )}
-              </button>
-              <button className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
-                <HelpCircle size={20} />
-              </button>
             </div>
 
             <div className="relative" ref={profileRef}>
