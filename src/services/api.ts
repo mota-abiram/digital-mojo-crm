@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, arrayUnion, query, orderBy, onSnapshot, where, startAfter, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, arrayUnion, query, orderBy, onSnapshot, where, startAfter, limit, setDoc } from 'firebase/firestore';
 import { Contact, Opportunity, Appointment, Conversation, Message, Notification } from '../types';
 
 export const api = {
@@ -464,5 +464,11 @@ export const api = {
         getAll: async () => {
             return [] as Notification[];
         }
+    },
+    users: {
+        create: async (userId: string, data: { name: string, email: string, avatar: string }) => {
+            const userRef = doc(db, 'users', userId);
+            await setDoc(userRef, { ...data, createdAt: new Date().toISOString() });
+        },
     }
 };

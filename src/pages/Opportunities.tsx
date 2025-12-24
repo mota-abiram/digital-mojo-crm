@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
-import { Plus, MoreHorizontal, X, Edit, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Calendar, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, FileText } from 'lucide-react';
+import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Modal } from '../components/Modal';
 import { Opportunity, Task, Note } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-
+    
 interface DraggableCardProps {
-    item: Opportunity;
+    item: Opportunity; 
     color: string;
     onEdit: (opp: Opportunity) => void;
     onDelete: (id: string) => void;

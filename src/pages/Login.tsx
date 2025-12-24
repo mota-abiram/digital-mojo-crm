@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { isUserAllowed } from '../lib/admin';
 import toast from 'react-hot-toast';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -21,7 +23,15 @@ const Login: React.FC = () => {
 
         setIsLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            if (!isUserAllowed(user.email)) {
+                await signOut(auth);
+                toast.error('Your email is not authorized to access this CRM.');
+                return;
+            }
+
             toast.success('Logged in successfully');
             navigate('/dashboard');
         } catch (error: any) {
@@ -45,6 +55,13 @@ const Login: React.FC = () => {
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
             const result = await signInWithPopup(auth, provider);
+
+            if (!isUserAllowed(result.user.email)) {
+                await signOut(auth);
+                toast.error('Your email is not authorized to access this CRM.');
+                return;
+            }
+
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential?.accessToken;
 

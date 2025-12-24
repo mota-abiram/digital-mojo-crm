@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { isUserAllowed, isRegistrationLimitReached } from '../lib/admin';
+import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { Lock, Mail, User, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -34,12 +36,34 @@ const Register: React.FC = () => {
 
         setIsLoading(true);
         try {
+            // Check if user is in whitelist (if enabled)
+            if (!isUserAllowed(email)) {
+                toast.error('This email is not authorized for registration.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Check if registration limit is reached
+            const limitReached = await isRegistrationLimitReached();
+            if (limitReached) {
+                toast.error('Registration limit reached. Please contact admin.');
+                setIsLoading(false);
+                return;
+            }
+
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
             await updateProfile(user, {
                 displayName: name,
                 photoURL: `https://ui-avatars.com/api/?name=${name}&background=random`
+            });
+
+            // Create user document in Firestore for tracking limits
+            await api.users.create(user.uid, {
+                name,
+                email,
+                avatar: user.photoURL || `https://ui-avatars.com/api/?name=${name}&background=random`
             });
 
             // Update store immediately
