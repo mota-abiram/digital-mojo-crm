@@ -7,7 +7,8 @@ export const ADMIN_CONFIG = {
         'komal@digitalmojo.in',
         'dhiraj@digitalmojo.in',
         'rupal@digitalmojo.in',
-        'aditi@digitalmojo.in'
+        'aditi@digitalmojo.in',
+        'abiram@digitalmojo.in'
         // Add more allowed emails here
     ],
 
