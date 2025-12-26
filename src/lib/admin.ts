@@ -4,9 +4,10 @@ import { collection, getDocs, query, limit } from 'firebase/firestore';
 export const ADMIN_CONFIG = {
     // List of allowed emails that can log in to the system
     ALLOWED_USERS: [
-        'info@digitalmojo.in',
+        'komal@digitalmojo.in',
         'dhiraj@digitalmojo.in',
-        'rupal@digitalmojo.in'
+        'rupal@digitalmojo.in',
+        'aditi@digitalmojo.in'
         // Add more allowed emails here
     ],
 
