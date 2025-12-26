@@ -16,7 +16,7 @@ export const ADMIN_CONFIG = {
     MAX_USERS: 10,
 
     // Set this to true to enforce the whitelist
-    ENFORCE_WHITELIST: false,
+    ENFORCE_WHITELIST: true,
 
     // Set this to true to enforce the max user limit
     ENFORCE_MAX_LIMIT: true
