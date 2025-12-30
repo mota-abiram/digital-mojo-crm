@@ -90,14 +90,14 @@ export const useStore = create<AppState>((set, get) => ({
     setCurrentUser: (user) => set({ currentUser: user }),
     logout: async () => {
         await signOut(auth);
+        get().setGoogleToken(null);
         set({
             currentUser: null,
             contacts: [],
             opportunities: [],
             appointments: [],
             conversations: [],
-            notifications: [],
-            googleToken: null
+            notifications: []
         });
     },
     initializeAuthListener: () => {
@@ -255,8 +255,15 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
-    googleToken: null,
-    setGoogleToken: (token) => set({ googleToken: token }),
+    googleToken: localStorage.getItem('google_calendar_token'),
+    setGoogleToken: (token) => {
+        if (token) {
+            localStorage.setItem('google_calendar_token', token);
+        } else {
+            localStorage.removeItem('google_calendar_token');
+        }
+        set({ googleToken: token });
+    },
 
     // Data Cleanup Functions
     removeDuplicateContacts: async () => {

@@ -29,7 +29,7 @@ import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 const Calendars: React.FC = () => {
-    const { appointments, contacts, fetchAppointments, fetchContacts, addAppointment, updateAppointment, deleteAppointment, currentUser, googleToken } = useStore();
+    const { appointments, contacts, fetchAppointments, fetchContacts, addAppointment, updateAppointment, deleteAppointment, currentUser, googleToken, setGoogleToken } = useStore();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState('Week');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,7 +100,7 @@ const Calendars: React.FC = () => {
             if (!response.ok) {
                 if (response.status === 401) {
                     console.warn("Token expired or invalid");
-                    // Optionally clear invalid token here
+                    setGoogleToken(null);
                     return;
                 }
                 const errorBody = await response.text();
@@ -208,6 +208,7 @@ const Calendars: React.FC = () => {
                 return;
             }
 
+            setGoogleToken(accessToken);
             await syncWithToken(accessToken);
             // reset manual check to allow feedback
             toast.success('Calendar synced successfully');
