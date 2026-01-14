@@ -326,7 +326,8 @@ const Opportunities: React.FC = () => {
             const matchesSearch =
                 opp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 opp.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                opp.companyName?.toLowerCase().includes(searchTerm.toLowerCase());
+                opp.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                opp.contactPhone?.includes(searchTerm);
 
             // Advanced Filters
             const matchesPipeline = filters.pipelineId ? opp.pipelineId === filters.pipelineId : true;
