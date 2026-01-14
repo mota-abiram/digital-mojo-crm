@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
-import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown } from 'lucide-react';
+import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown, Calendar } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Modal } from '../components/Modal';
@@ -206,6 +206,7 @@ const Opportunities: React.FC = () => {
         companyName: '',
 
         tags: '',
+        calendar: '',
         pipelineId: 'Marketing Pipeline',
         contactValue: 'Standard'
     });
@@ -222,7 +223,9 @@ const Opportunities: React.FC = () => {
     const [appointmentForm, setAppointmentForm] = useState({
         calendar: '',
         location: '',
-        title: ''
+        title: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: '09:00'
     });
 
     // Pipeline editing state
@@ -437,6 +440,7 @@ const Opportunities: React.FC = () => {
                 contactPhone: linkedContact?.phone || opp.contactPhone || '',
                 companyName: linkedContact?.companyName || opp.companyName || '',
                 tags: opp.tags ? opp.tags.join(', ') : '',
+                calendar: opp.calendar || '',
                 pipelineId: opp.pipelineId || 'Marketing Pipeline',
                 contactValue: linkedContact?.Value || 'Standard'
             });
@@ -446,7 +450,7 @@ const Opportunities: React.FC = () => {
             setEditingId(null);
             setFormData({
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
-                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', pipelineId: 'Marketing Pipeline', contactValue: 'Standard'
+                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', pipelineId: 'Marketing Pipeline', contactValue: 'Standard'
             });
             setTasks([]);
             setNotes([]);
@@ -524,6 +528,7 @@ const Opportunities: React.FC = () => {
             companyName: formData.companyName,
             contactId: finalContactId,
             pipelineId: formData.pipelineId,
+            calendar: formData.calendar,
             tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
             updatedAt: new Date().toISOString(),
             tasks: tasks,
@@ -605,14 +610,20 @@ const Opportunities: React.FC = () => {
         try {
             await addAppointment({
                 title: appointmentForm.title,
-                date: format(new Date(), 'yyyy-MM-dd'), // Default to today for now
-                time: '09:00',
+                date: appointmentForm.date,
+                time: appointmentForm.time,
                 assignedTo: currentUser?.id || 'Unknown',
                 notes: `Location: ${appointmentForm.location}`,
                 contactId: editingId || undefined // Associate with this opportunity if possible, or just create generic
             });
             toast.success('Appointment booked successfully');
-            setAppointmentForm({ calendar: '', location: '', title: '' });
+            setAppointmentForm({
+                calendar: '',
+                location: '',
+                title: '',
+                date: format(new Date(), 'yyyy-MM-dd'),
+                time: '09:00'
+            });
         } catch (error) {
             toast.error('Failed to book appointment');
         }
@@ -1326,6 +1337,22 @@ const Opportunities: React.FC = () => {
                                                             </div>
                                                         </div>
 
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Calendar</label>
+                                                            <div className="relative">
+                                                                <Calendar className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                                <select
+                                                                    value={formData.calendar}
+                                                                    onChange={e => setFormData({ ...formData, calendar: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
+                                                                    <option value="">Select calendar</option>
+                                                                    <option value={currentUser?.email}>{currentUser?.name}'s Calendar ({currentUser?.email})</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+
                                                         <hr className="border-gray-200" />
 
                                                         <div>
@@ -1392,6 +1419,27 @@ const Opportunities: React.FC = () => {
                                                             <option value="">Select calendar</option>
                                                             <option value="default">Default Calendar</option>
                                                         </select>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Date <span className="text-red-500">*</span></label>
+                                                            <input
+                                                                type="date"
+                                                                value={appointmentForm.date}
+                                                                onChange={e => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Time <span className="text-red-500">*</span></label>
+                                                            <input
+                                                                type="time"
+                                                                value={appointmentForm.time}
+                                                                onChange={e => setAppointmentForm({ ...appointmentForm, time: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-6">

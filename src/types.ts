@@ -50,6 +50,7 @@ export interface Opportunity {
   contactPhone?: string;
   companyName?: string;
   source?: string;
+  calendar?: string;
   pipelineId?: string;
   createdAt?: string;
   updatedAt?: string;

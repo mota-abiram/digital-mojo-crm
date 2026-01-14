@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import { useStore } from './store/useStore';
 import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import ReminderManager from './components/ReminderManager';
 
 // Pages
 import Login from './pages/Login';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <Toaster position="top-right" />
+      <ReminderManager />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
