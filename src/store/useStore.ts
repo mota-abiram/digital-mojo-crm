@@ -164,10 +164,15 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const result = await api.opportunities.getByStage(stageId, undefined, 10);
             set((state) => {
-                // Remove existing opportunities for this stage, add new ones
-                const otherOpportunities = state.opportunities.filter(o => o.stage !== stageId);
+                // Deduplicate: remove existing opportunities for this stage, add new ones, then deduplicate global array
+                const otherOpps = state.opportunities.filter(o => o.stage !== stageId);
+                const updatedOpps = [...otherOpps, ...result.data];
+
+                // Final safety deduplication by ID
+                const uniqueOpps = Array.from(new Map(updatedOpps.map(o => [o.id, o])).values());
+
                 return {
-                    opportunities: [...otherOpportunities, ...result.data],
+                    opportunities: uniqueOpps,
                     stagePagination: {
                         ...state.stagePagination,
                         [stageId]: {
@@ -202,11 +207,12 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const result = await api.opportunities.getByStage(stageId, pagination.lastDoc, 10);
             set((state) => {
-                // Add new opportunities (avoid duplicates)
-                const existingIds = new Set(state.opportunities.map(o => o.id));
-                const newOpportunities = result.data.filter(o => !existingIds.has(o.id));
+                // Add new opportunities and deduplicate by ID
+                const combined = [...state.opportunities, ...result.data];
+                const uniqueOpps = Array.from(new Map(combined.map(o => [o.id, o])).values());
+
                 return {
-                    opportunities: [...state.opportunities, ...newOpportunities],
+                    opportunities: uniqueOpps,
                     stagePagination: {
                         ...state.stagePagination,
                         [stageId]: {
@@ -415,7 +421,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         const { data, lastDoc } = await api.opportunities.getAll(currentUser?.id, lastOpportunityDoc, 20);
         set({
-            opportunities: [...opportunities, ...data],
+            opportunities: Array.from(new Map([...opportunities, ...data].map(o => [o.id, o])).values()),
             lastOpportunityDoc: lastDoc,
             hasMoreOpportunities: data.length === 20
         });

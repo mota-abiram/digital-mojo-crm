@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
-import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock } from 'lucide-react';
+import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Modal } from '../components/Modal';
 import { Opportunity, Task, Note } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-    
+
 interface DraggableCardProps {
-    item: Opportunity; 
+    item: Opportunity;
     color: string;
     onEdit: (opp: Opportunity) => void;
     onDelete: (id: string) => void;
@@ -175,7 +175,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
                 <div ref={loadMoreRef} className="h-4">
                     {isLoading && hasMore && (
                         <div className="flex justify-center py-2">
-                            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-5 h-5 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     )}
                 </div>
@@ -199,7 +199,6 @@ const Opportunities: React.FC = () => {
         value: '',
         stage: '',
         status: 'Open',
-        owner: '',
         source: '',
         contactName: '',
         contactEmail: '',
@@ -246,11 +245,46 @@ const Opportunities: React.FC = () => {
     // FILTER STATE
     const [searchTerm, setSearchTerm] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isSortOpen, setIsSortOpen] = useState(false);
+    const [sortBy, setSortBy] = useState<'date' | 'stage' | 'none'>('none');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const filterRef = useRef<HTMLDivElement>(null);
+    const sortRef = useRef<HTMLDivElement>(null);
     const [filters, setFilters] = useState({
         pipelineId: '',
         stage: '',
         status: ''
     });
+
+    const getStageRank = (title: string) => {
+        const match = title.match(/^(\d+(\.\d+)?)/);
+        return match ? parseFloat(match[1]) : 999;
+    };
+
+    const sortedStages = useMemo(() => {
+        if (sortBy === 'none') return stages;
+        const sorted = [...stages].sort((a, b) => getStageRank(a.title) - getStageRank(b.title));
+        return sortOrder === 'asc' ? sorted : [...sorted].reverse();
+    }, [stages, sortOrder, sortBy]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterOpen(false);
+            }
+            if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+                setIsSortOpen(false);
+            }
+        };
+
+        if (isFilterOpen || isSortOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isFilterOpen, isSortOpen]);
 
     // List view infinite scroll refs
     const listScrollContainerRef = useRef<HTMLDivElement>(null);
@@ -300,8 +334,31 @@ const Opportunities: React.FC = () => {
             const matchesStatus = filters.status ? opp.status === filters.status : true;
 
             return matchesSearch && matchesPipeline && matchesStage && matchesStatus;
+        }).sort((a, b) => {
+            if (sortBy === 'none') {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateB - dateA;
+            }
+            if (sortBy === 'stage') {
+                const stageA = stages.find(s => s.id === a.stage);
+                const stageB = stages.find(s => s.id === b.stage);
+                const rankA = stageA ? getStageRank(stageA.title) : 999;
+                const rankB = stageB ? getStageRank(stageB.title) : 999;
+                if (rankA !== rankB) {
+                    return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+                }
+                // Keep opportunities inside same stage sorted by date descending
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateB - dateA;
+            } else {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            }
         });
-    }, [opportunities, searchTerm, filters.pipelineId, filters.stage, filters.status]);
+    }, [opportunities, searchTerm, filters.pipelineId, filters.stage, filters.status, sortOrder, sortBy, stages]);
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -373,7 +430,6 @@ const Opportunities: React.FC = () => {
                 value: opp.value.toString(),
                 stage: opp.stage,
                 status: opp.status,
-                owner: opp.owner || '',
                 source: opp.source || '',
                 contactName: linkedContact?.name || opp.contactName || '',
                 contactEmail: linkedContact?.email || opp.contactEmail || '',
@@ -388,7 +444,7 @@ const Opportunities: React.FC = () => {
         } else {
             setEditingId(null);
             setFormData({
-                name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', owner: currentUser?.id || '', source: '',
+                name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
                 contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', pipelineId: 'Marketing Pipeline', contactValue: 'Standard'
             });
             setTasks([]);
@@ -460,7 +516,6 @@ const Opportunities: React.FC = () => {
             value: Number(formData.value),
             stage: formData.stage,
             status: formData.status as any,
-            owner: formData.owner || currentUser?.id || 'Unknown',
             source: formData.source,
             contactName: formData.contactName,
             contactEmail: formData.contactEmail,
@@ -677,7 +732,6 @@ const Opportunities: React.FC = () => {
                             value: Number(normalizedRow['value'] || 0),
                             stage: validStageId,
                             status: (normalizedRow['status'] || 'Open'),
-                            owner: currentUser?.id || 'Unknown',
                             source: normalizedRow['source'] || '',
                             contactName: contactName || '',
                             contactEmail: contactEmail || '',
@@ -722,7 +776,6 @@ const Opportunities: React.FC = () => {
             'Value': opp.value,
             'Stage': stages.find(s => s.id === opp.stage)?.title || opp.stage,
             'Status': opp.status,
-            'Owner': opp.owner,
             'Source': opp.source,
             'Contact Name': opp.contactName,
             'Contact Email': opp.contactEmail,
@@ -796,7 +849,7 @@ const Opportunities: React.FC = () => {
                         </button>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-bold hover:bg-primary/90 shadow-sm flex items-center gap-2"
+                            className="px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-bold hover:bg-brand-blue/90 shadow-sm flex items-center gap-2"
                         >
                             <Plus size={16} /> Add Opportunity
                         </button>
@@ -833,15 +886,48 @@ const Opportunities: React.FC = () => {
                             placeholder="Search Opportunities"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
                         />
                     </div>
-                    <div className="relative">
+                    <div className="relative" ref={sortRef}>
+                        <button
+                            onClick={() => setIsSortOpen(!isSortOpen)}
+                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isSortOpen ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                        >
+                            <ArrowUpDown size={18} />
+                            Sort: {sortBy === 'none' ? 'Default' : (sortOrder === 'asc' ? 'Stage Asc' : 'Stage Desc')}
+                        </button>
+
+                        {isSortOpen && (
+                            <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                                <button
+                                    onClick={() => { setSortBy('none'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'none' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Reset to Default Order
+                                </button>
+                                <div className="my-1 border-t border-gray-100" />
+                                <button
+                                    onClick={() => { setSortBy('stage'); setSortOrder('asc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'stage' && sortOrder === 'asc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Stage: Ascending (0 → 21)
+                                </button>
+                                <button
+                                    onClick={() => { setSortBy('stage'); setSortOrder('desc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'stage' && sortOrder === 'desc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Stage: Descending (21 → 0)
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="relative" ref={filterRef}>
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-primary text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                         >
-                            <Filter size={18} /> Filters {(Object.values(filters).some(Boolean)) && <span className="w-2 h-2 rounded-full bg-primary mb-2"></span>}
+                            <Filter size={18} /> Filters {(Object.values(filters).some(Boolean)) && <span className="w-2 h-2 rounded-full bg-brand-blue mb-2"></span>}
                         </button>
 
                         {/* Filter Dropdown */}
@@ -852,7 +938,7 @@ const Opportunities: React.FC = () => {
                                     <select
                                         value={filters.pipelineId}
                                         onChange={(e) => setFilters(prev => ({ ...prev, pipelineId: e.target.value }))}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
                                     >
                                         <option value="">All Pipelines</option>
                                         <option value="Marketing Pipeline">Marketing Pipeline</option>
@@ -864,7 +950,7 @@ const Opportunities: React.FC = () => {
                                     <select
                                         value={filters.stage}
                                         onChange={(e) => setFilters(prev => ({ ...prev, stage: e.target.value }))}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
                                     >
                                         <option value="">All Stages</option>
                                         {stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
@@ -875,7 +961,7 @@ const Opportunities: React.FC = () => {
                                     <select
                                         value={filters.status}
                                         onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
                                     >
                                         <option value="">All Statuses</option>
                                         <option value="Open">Open</option>
@@ -884,12 +970,18 @@ const Opportunities: React.FC = () => {
                                         <option value="Abandoned">Abandoned</option>
                                     </select>
                                 </div>
-                                <div className="pt-2 border-t border-gray-100 flex justify-end">
+                                <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                                     <button
                                         onClick={() => setFilters({ pipelineId: '', stage: '', status: '' })}
                                         className="text-xs text-red-600 hover:text-red-700 font-medium"
                                     >
                                         Clear Filters
+                                    </button>
+                                    <button
+                                        onClick={() => setIsFilterOpen(false)}
+                                        className="px-3 py-1.5 bg-brand-blue text-white rounded text-xs font-bold hover:bg-brand-blue/90"
+                                    >
+                                        Done
                                     </button>
                                 </div>
                             </div>
@@ -904,7 +996,7 @@ const Opportunities: React.FC = () => {
                     <DndContext onDragEnd={handleDragEnd}>
                         <div className="h-full overflow-x-auto overflow-y-hidden custom-scrollbar pb-4">
                             <div className="flex h-full gap-4 min-w-max px-1">
-                                {stages.map(stage => (
+                                {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => (
                                     <DroppableColumn
                                         key={stage.id}
                                         stage={stage}
@@ -933,7 +1025,7 @@ const Opportunities: React.FC = () => {
                                                 type="checkbox"
                                                 checked={selectedIds.size === visibleOpportunities.length && visibleOpportunities.length > 0}
                                                 onChange={handleSelectAll}
-                                                className="w-4 h-4 text-brand-blue bg-gray-100 border-gray-300 rounded focus:ring-primary"
+                                                className="w-4 h-4 text-brand-blue bg-gray-100 border-gray-300 rounded focus:ring-brand-blue"
                                             />
                                         </th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity</th>
@@ -945,7 +1037,6 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Owner</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tags</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Created On</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 text-right">Actions</th>
@@ -959,7 +1050,7 @@ const Opportunities: React.FC = () => {
                                                     type="checkbox"
                                                     checked={selectedIds.has(opp.id)}
                                                     onChange={() => handleSelectOne(opp.id)}
-                                                    className="rounded border-gray-300 text-brand-blue focus:ring-primary"
+                                                    className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
                                                 />
                                             </td>
                                             <td className="p-4 font-medium text-brand-blue">{opp.companyName || opp.name}</td>
@@ -990,7 +1081,6 @@ const Opportunities: React.FC = () => {
                                                     {opp.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-sm text-gray-500">{opp.owner || '-'}</td>
                                             <td className="p-4">
                                                 <div className="flex gap-1 flex-wrap">
                                                     {opp.tags.map(tag => (
@@ -1013,7 +1103,7 @@ const Opportunities: React.FC = () => {
                                         <td colSpan={14} className="h-4">
                                             {isLoading && hasMoreOpportunities && (
                                                 <div className="flex justify-center py-4">
-                                                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                    <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                                                 </div>
                                             )}
                                         </td>
@@ -1025,7 +1115,7 @@ const Opportunities: React.FC = () => {
                             <span>Showing {visibleOpportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
                             {isLoading && (
                                 <div className="flex items-center gap-2 text-brand-blue">
-                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
                                     <span>Loading...</span>
                                 </div>
                             )}
@@ -1035,192 +1125,181 @@ const Opportunities: React.FC = () => {
             </div>
 
             {/* Enhanced Opportunity Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-                        {/* Modal Header */}
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                {editingId ? `Edit "${formData.name}"` : 'New Opportunity'}
-                            </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="flex flex-1 overflow-hidden">
-                            {/* Sidebar Tabs */}
-                            <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col overflow-y-auto">
-                                {['Opportunity Details', 'Book/Update Appointment', 'Tasks', 'Notes'].map((tab) => {
-                                    const id = tab.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                                    return (
-                                        <button
-                                            key={id}
-                                            onClick={() => setActiveTab(id)}
-                                            className={`px-6 py-4 text-left text-sm font-medium border-l-4 transition-colors ${activeTab === id || (id === 'opportunity-details' && activeTab === 'details')
-                                                ? 'bg-blue-50 border-primary text-brand-blue'
-                                                : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                                }`}
-                                        >
-                                            {tab}
-                                        </button>
-                                    );
-                                })}
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
+                                <h2 className="text-xl font-bold text-gray-900">
+                                    {editingId ? `Edit "${formData.name}"` : 'New Opportunity'}
+                                </h2>
+                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                    <X size={24} />
+                                </button>
                             </div>
 
-                            {/* Main Content Area */}
-                            <div className="flex-1 overflow-y-auto p-8 bg-white">
-                                <div className="max-w-4xl mx-auto space-y-8">
-                                    {/* DETAILS TAB */}
-                                    {(activeTab === 'details' || activeTab === 'opportunity-details') && (
-                                        <>
-                                            {/* Contact Details Section */}
-                                            <section>
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                                        Contact details <User size={18} className="text-gray-400" />
-                                                    </h3>
-                                                </div>
-                                                <div className="space-y-6">
-                                                    <div className="relative">
-                                                        <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Contact Name"
-                                                            value={formData.contactName}
-                                                            onChange={e => setFormData({ ...formData, contactName: e.target.value })}
-                                                            className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
+                            <div className="flex flex-1 overflow-hidden">
+                                {/* Sidebar Tabs */}
+                                <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col overflow-y-auto">
+                                    {['Opportunity Details', 'Book/Update Appointment', 'Tasks', 'Notes'].map((tab) => {
+                                        const id = tab.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                                        return (
+                                            <button
+                                                key={id}
+                                                onClick={() => setActiveTab(id)}
+                                                className={`px-6 py-4 text-left text-sm font-medium border-l-4 transition-colors ${activeTab === id || (id === 'opportunity-details' && activeTab === 'details')
+                                                    ? 'bg-blue-50 border-brand-blue text-brand-blue'
+                                                    : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Main Content Area */}
+                                <div className="flex-1 overflow-y-auto p-8 bg-white">
+                                    <div className="max-w-4xl mx-auto space-y-8">
+                                        {/* DETAILS TAB */}
+                                        {(activeTab === 'details' || activeTab === 'opportunity-details') && (
+                                            <>
+                                                {/* Contact Details Section */}
+                                                <section>
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                                            Contact details <User size={18} className="text-gray-400" />
+                                                        </h3>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-6">
+                                                    <div className="space-y-6">
                                                         <div className="relative">
-                                                            <Mail className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                            <input
-                                                                type="email"
-                                                                placeholder="Email Address"
-                                                                value={formData.contactEmail}
-                                                                onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            />
-                                                        </div>
-                                                        <div className="relative">
-                                                            <Phone className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                            <input
-                                                                type="tel"
-                                                                placeholder="Phone Number"
-                                                                value={formData.contactPhone}
-                                                                onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
-                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Contact Value</label>
-                                                            <select
-                                                                value={formData.contactValue}
-                                                                onChange={e => setFormData({ ...formData, contactValue: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            >
-                                                                <option value="Standard">Standard</option>
-                                                                <option value="Mid">Mid</option>
-                                                                <option value="High">High</option>
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Company Name</label>
+                                                            <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                             <input
                                                                 type="text"
-                                                                placeholder="Company Name"
-                                                                value={formData.companyName}
-                                                                onChange={e => setFormData({ ...formData, companyName: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                                placeholder="Contact Name"
+                                                                value={formData.contactName}
+                                                                onChange={e => setFormData({ ...formData, contactName: e.target.value })}
+                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                             />
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </section>
-
-                                            <hr className="border-gray-200" />
-
-                                            {/* Opportunity Details Section */}
-                                            <section>
-                                                <h3 className="text-lg font-bold text-gray-900 mb-4">Opportunity Details</h3>
-                                                <div className="space-y-6">
-                                                    <div>
-                                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Name <span className="text-red-500">*</span></label>
-                                                        <input
-                                                            type="text"
-                                                            value={formData.name}
-                                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Pipeline</label>
-                                                            <select
-                                                                value={formData.pipelineId}
-                                                                onChange={(e) => setFormData({ ...formData, pipelineId: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            >
-                                                                <option value="Marketing Pipeline">Marketing Pipeline</option>
-                                                                <option value="Sales Pipeline">Sales Pipeline</option>
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Stage</label>
-                                                            <select
-                                                                value={formData.stage}
-                                                                onChange={e => setFormData({ ...formData, stage: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            >
-                                                                {stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Status</label>
-                                                            <select
-                                                                value={formData.status}
-                                                                onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            >
-                                                                <option value="Open">Open</option>
-                                                                <option value="Won">Won</option>
-                                                                <option value="Lost">Lost</option>
-                                                                <option value="Abandoned">Abandoned</option>
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Value</label>
+                                                        <div className="grid grid-cols-2 gap-6">
                                                             <div className="relative">
-                                                                <span className="absolute left-3 top-2.5 text-gray-500 text-sm">₹</span>
+                                                                <Mail className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                                 <input
-                                                                    type="number"
-                                                                    value={formData.value}
-                                                                    onChange={e => setFormData({ ...formData, value: e.target.value })}
-                                                                    className="w-full pl-8 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                                    type="email"
+                                                                    placeholder="Email Address"
+                                                                    value={formData.contactEmail}
+                                                                    onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
+                                                            </div>
+                                                            <div className="relative">
+                                                                <Phone className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                                <input
+                                                                    type="tel"
+                                                                    placeholder="Phone Number"
+                                                                    value={formData.contactPhone}
+                                                                    onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Contact Value</label>
+                                                                <select
+                                                                    value={formData.contactValue}
+                                                                    onChange={e => setFormData({ ...formData, contactValue: e.target.value })}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
+                                                                    <option value="Standard">Standard</option>
+                                                                    <option value="Mid">Mid</option>
+                                                                    <option value="High">High</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Company Name</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Company Name"
+                                                                    value={formData.companyName}
+                                                                    onChange={e => setFormData({ ...formData, companyName: e.target.value })}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                                 />
                                                             </div>
                                                         </div>
                                                     </div>
+                                                </section>
 
-                                                    <div className="grid grid-cols-2 gap-6">
+                                                <hr className="border-gray-200" />
+
+                                                {/* Opportunity Details Section */}
+                                                <section>
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Opportunity Details</h3>
+                                                    <div className="space-y-6">
                                                         <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Owner</label>
-                                                            <select
-                                                                value={formData.owner}
-                                                                onChange={e => setFormData({ ...formData, owner: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                            >
-                                                                <option value={currentUser?.id || 'Unknown'}>Me</option>
-                                                                <option value="Unassigned">Unassigned</option>
-                                                            </select>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Name <span className="text-red-500">*</span></label>
+                                                            <input
+                                                                type="text"
+                                                                value={formData.name}
+                                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
                                                         </div>
+
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Pipeline</label>
+                                                                <select
+                                                                    value={formData.pipelineId}
+                                                                    onChange={(e) => setFormData({ ...formData, pipelineId: e.target.value })}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
+                                                                    <option value="Marketing Pipeline">Marketing Pipeline</option>
+                                                                    <option value="Sales Pipeline">Sales Pipeline</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Stage</label>
+                                                                <select
+                                                                    value={formData.stage}
+                                                                    onChange={e => setFormData({ ...formData, stage: e.target.value })}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
+                                                                    {stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Status</label>
+                                                                <select
+                                                                    value={formData.status}
+                                                                    onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
+                                                                    <option value="Open">Open</option>
+                                                                    <option value="Won">Won</option>
+                                                                    <option value="Lost">Lost</option>
+                                                                    <option value="Abandoned">Abandoned</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Value</label>
+                                                                <div className="relative">
+                                                                    <span className="absolute left-3 top-2.5 text-gray-500 text-sm">₹</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={formData.value}
+                                                                        onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                                                        className="w-full pl-8 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
                                                         <div>
                                                             <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Source</label>
                                                             <input
@@ -1228,419 +1307,418 @@ const Opportunities: React.FC = () => {
                                                                 placeholder="Enter Source"
                                                                 value={formData.source}
                                                                 onChange={e => setFormData({ ...formData, source: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                             />
                                                         </div>
+
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Tags</label>
+                                                            <div className="relative">
+                                                                <Tag className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Add tags (comma separated)"
+                                                                    value={formData.tags}
+                                                                    onChange={e => setFormData({ ...formData, tags: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <hr className="border-gray-200" />
+
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                                                                <button
+                                                                    onClick={() => setIsAddingNote(true)}
+                                                                    className="text-xs text-brand-blue font-medium hover:underline"
+                                                                >
+                                                                    + Add Note
+                                                                </button>
+                                                            </div>
+
+                                                            {isAddingNote && (
+                                                                <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                                    <textarea
+                                                                        placeholder="Write a note..."
+                                                                        value={newNoteContent}
+                                                                        onChange={e => setNewNoteContent(e.target.value)}
+                                                                        className="w-full p-2 bg-white border border-gray-300 rounded text-sm focus:ring-brand-blue focus:border-brand-blue mb-2 min-h-[80px]"
+                                                                    />
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
+                                                                        <button onClick={handleAddNote} className="px-2 py-1 text-xs text-white bg-brand-blue rounded hover:bg-brand-blue/90">Save</button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                                                {notes.length === 0 && !isAddingNote ? (
+                                                                    <p className="text-sm text-gray-400 italic">No notes yet.</p>
+                                                                ) : (
+                                                                    notes.map(note => (
+                                                                        <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
+                                                                            <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
+                                                                            <div className="flex justify-between items-center text-xs text-gray-500">
+                                                                                <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
+                                                                                <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                    <Trash2 size={12} />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </section>
+                                            </>
+                                        )}
+
+                                        {/* APPOINTMENT TAB */}
+                                        {activeTab === 'book-update-appointment' && (
+                                            <section>
+                                                <h3 className="text-lg font-bold text-gray-900 mb-6">Book/Update Appointment</h3>
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Calendar <span className="text-red-500">*</span></label>
+                                                        <select
+                                                            value={appointmentForm.calendar}
+                                                            onChange={e => setAppointmentForm({ ...appointmentForm, calendar: e.target.value })}
+                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                        >
+                                                            <option value="">Select calendar</option>
+                                                            <option value="default">Default Calendar</option>
+                                                        </select>
                                                     </div>
 
-                                                    <div>
-                                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Tags</label>
-                                                        <div className="relative">
-                                                            <Tag className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Meeting Location</label>
                                                             <input
                                                                 type="text"
-                                                                placeholder="Add tags (comma separated)"
-                                                                value={formData.tags}
-                                                                onChange={e => setFormData({ ...formData, tags: e.target.value })}
-                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                                placeholder="Meeting Location"
+                                                                value={appointmentForm.location}
+                                                                onChange={e => setAppointmentForm({ ...appointmentForm, location: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Appointment Title</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Appointment Title"
+                                                                value={appointmentForm.title}
+                                                                onChange={e => setAppointmentForm({ ...appointmentForm, title: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                             />
                                                         </div>
                                                     </div>
 
-                                                    <hr className="border-gray-200" />
-
-                                                    <div>
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <label className="block text-sm font-medium text-gray-700">Notes</label>
-                                                            <button
-                                                                onClick={() => setIsAddingNote(true)}
-                                                                className="text-xs text-brand-blue font-medium hover:underline"
-                                                            >
-                                                                + Add Note
-                                                            </button>
-                                                        </div>
-
-                                                        {isAddingNote && (
-                                                            <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                                <textarea
-                                                                    placeholder="Write a note..."
-                                                                    value={newNoteContent}
-                                                                    onChange={e => setNewNoteContent(e.target.value)}
-                                                                    className="w-full p-2 bg-white border border-gray-300 rounded text-sm focus:ring-primary focus:border-primary mb-2 min-h-[80px]"
-                                                                />
-                                                                <div className="flex justify-end gap-2">
-                                                                    <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                                    <button onClick={handleAddNote} className="px-2 py-1 text-xs text-black bg-primary rounded hover:bg-primary/90">Save</button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                                                            {notes.length === 0 && !isAddingNote ? (
-                                                                <p className="text-sm text-gray-400 italic">No notes yet.</p>
-                                                            ) : (
-                                                                notes.map(note => (
-                                                                    <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
-                                                                        <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
-                                                                        <div className="flex justify-between items-center text-xs text-gray-500">
-                                                                            <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
-                                                                            <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <Trash2 size={12} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))
-                                                            )}
-                                                        </div>
+                                                    <div className="flex justify-end pt-4">
+                                                        <button
+                                                            onClick={handleBookAppointment}
+                                                            className="px-5 py-2.5 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90 focus:ring-4 focus:ring-brand-blue/30"
+                                                        >
+                                                            Book Appointment
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </section>
-                                        </>
-                                    )}
+                                        )}
 
-                                    {/* APPOINTMENT TAB */}
-                                    {activeTab === 'book-update-appointment' && (
-                                        <section>
-                                            <h3 className="text-lg font-bold text-gray-900 mb-6">Book/Update Appointment</h3>
-                                            <div className="space-y-6">
-                                                <div>
-                                                    <label className="block mb-1.5 text-sm font-medium text-gray-700">Calendar <span className="text-red-500">*</span></label>
-                                                    <select
-                                                        value={appointmentForm.calendar}
-                                                        onChange={e => setAppointmentForm({ ...appointmentForm, calendar: e.target.value })}
-                                                        className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                    >
-                                                        <option value="">Select calendar</option>
-                                                        <option value="default">Default Calendar</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div>
-                                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Meeting Location</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Meeting Location"
-                                                            value={appointmentForm.location}
-                                                            onChange={e => setAppointmentForm({ ...appointmentForm, location: e.target.value })}
-                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block mb-1.5 text-sm font-medium text-gray-700">Appointment Title</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Appointment Title"
-                                                            value={appointmentForm.title}
-                                                            onChange={e => setAppointmentForm({ ...appointmentForm, title: e.target.value })}
-                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex justify-end pt-4">
-                                                    <button
-                                                        onClick={handleBookAppointment}
-                                                        className="px-5 py-2.5 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30"
-                                                    >
-                                                        Book Appointment
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </section>
-                                    )}
-
-                                    {/* TASKS TAB */}
-                                    {activeTab === 'tasks' && (
-                                        <section className="h-full flex flex-col">
-                                            {!isAddingTask ? (
-                                                <>
-                                                    <div className="flex justify-between items-center mb-6">
-                                                        <h3 className="text-lg font-bold text-gray-900">Tasks</h3>
-                                                        <div className="flex gap-2">
-                                                            <button className="p-2 text-gray-400 hover:text-gray-600"><Filter size={18} /></button>
+                                        {/* TASKS TAB */}
+                                        {activeTab === 'tasks' && (
+                                            <section className="h-full flex flex-col">
+                                                {!isAddingTask ? (
+                                                    <>
+                                                        <div className="flex justify-between items-center mb-6">
+                                                            <h3 className="text-lg font-bold text-gray-900">Tasks</h3>
+                                                            <div className="flex gap-2">
+                                                                <button className="p-2 text-gray-400 hover:text-gray-600"><Filter size={18} /></button>
+                                                            </div>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="mb-6">
-                                                        <button
-                                                            onClick={() => {
-                                                                setNewTaskTitle('');
-                                                                setIsAddingTask(true);
-                                                            }}
-                                                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
-                                                        >
-                                                            <Plus size={18} /> Add Task
-                                                        </button>
-                                                    </div>
+                                                        <div className="mb-6">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setNewTaskTitle('');
+                                                                    setIsAddingTask(true);
+                                                                }}
+                                                                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-brand-blue transition-colors flex items-center justify-center gap-2"
+                                                            >
+                                                                <Plus size={18} /> Add Task
+                                                            </button>
+                                                        </div>
 
-                                                    <div className="relative mb-6">
-                                                        <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search by task title"
-                                                            className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex-1 overflow-y-auto">
-                                                        {tasks.length === 0 ? (
-                                                            <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
-                                                                    <CheckSquare size={32} />
-                                                                </div>
-                                                                <h4 className="text-gray-900 font-medium mb-1">No tasks found</h4>
-                                                                <p className="text-gray-500 text-sm mb-4">There are no tasks available</p>
-                                                                <button onClick={() => setIsAddingTask(true)} className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-medium hover:bg-primary/90">
-                                                                    + Add New Task
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-3">
-                                                                {tasks.map(task => (
-                                                                    <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-primary" />
-                                                                            <div className="flex flex-col">
-                                                                                <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
-                                                                                {task.dueDate && (
-                                                                                    <span className="text-xs text-gray-500">Due: {task.dueDate} {task.dueTime}</span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">
-                                                                            <Trash2 size={16} />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="animate-in fade-in slide-in-from-right-4 h-full flex flex-col">
-                                                    <div className="flex items-center gap-2 mb-6">
-                                                        <button onClick={() => setIsAddingTask(false)} className="text-gray-500 hover:text-gray-700">
-                                                            <ChevronDown className="rotate-90" size={20} />
-                                                        </button>
-                                                        <h3 className="text-lg font-bold text-gray-900">Add Task</h3>
-                                                    </div>
-
-                                                    <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Title <span className="text-red-500">*</span></label>
+                                                        <div className="relative mb-6">
+                                                            <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                             <input
                                                                 type="text"
-                                                                placeholder="Task title"
-                                                                value={newTaskTitle}
-                                                                onChange={e => setNewTaskTitle(e.target.value)}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                                                                placeholder="Search by task title"
+                                                                className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                             />
                                                         </div>
 
-                                                        <div>
-                                                            <button className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                                                <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
-                                                                    <div className="w-2 h-0.5 bg-gray-600"></div>
-                                                                </div>
-                                                                Remove description
-                                                            </button>
-                                                            <div className="border border-gray-300 rounded-lg overflow-hidden">
-                                                                <div className="flex items-center gap-2 p-2 border-b border-gray-300 bg-gray-50 text-gray-600">
-                                                                    <button className="p-1 hover:bg-gray-200 rounded"><b className="font-serif font-bold">B</b></button>
-                                                                    <button className="p-1 hover:bg-gray-200 rounded"><i className="font-serif italic">I</i></button>
-                                                                    <button className="p-1 hover:bg-gray-200 rounded"><u className="font-serif underline">U</u></button>
-                                                                    <div className="w-px h-4 bg-gray-300 mx-1"></div>
-                                                                    <button className="p-1 hover:bg-gray-200 rounded text-xs">Link</button>
-                                                                </div>
-                                                                <textarea
-                                                                    placeholder="Enter a description..."
-                                                                    className="w-full p-3 text-sm focus:outline-none min-h-[120px] resize-none"
-                                                                    maxLength={2000}
-                                                                ></textarea>
-                                                                <div className="p-2 text-right text-xs text-gray-400 border-t border-gray-100">
-                                                                    0 / 2000 Characters
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Due date and time (IST)</label>
-                                                            <div className="flex gap-4">
-                                                                <div className="relative flex-1">
-                                                                    <input
-                                                                        type="date"
-                                                                        className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                                                                    />
-                                                                </div>
-                                                                <div className="relative w-32">
-                                                                    <input
-                                                                        type="time"
-                                                                        className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                                        defaultValue="08:00"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                            <span className="text-sm font-medium text-gray-900">Recurring tasks</span>
-                                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                                <input type="checkbox" className="sr-only peer" />
-                                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                                            </label>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Assign to</label>
-                                                            <select className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary">
-                                                                <option value="">Select assignee</option>
-                                                                <option value={currentUser?.id || 'me'}>Me</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                                                        <button
-                                                            onClick={() => setIsAddingTask(false)}
-                                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                        <button
-                                                            onClick={handleAddTask}
-                                                            className="px-4 py-2 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90"
-                                                        >
-                                                            Save
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </section>
-                                    )}
-
-                                    {/* NOTES TAB */}
-                                    {activeTab === 'notes' && (
-                                        <section className="h-full flex flex-col">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h3 className="text-lg font-bold text-gray-900">Notes</h3>
-                                                <div className="flex gap-2">
-                                                    <button className="p-2 text-gray-400 hover:text-gray-600"><Filter size={18} /></button>
-                                                </div>
-                                            </div>
-
-                                            <div className="mb-6">
-                                                <button
-                                                    onClick={() => setIsAddingNote(true)}
-                                                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-primary transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <Plus size={18} /> Add Note
-                                                </button>
-                                            </div>
-
-                                            {isAddingNote && (
-                                                <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                                                    <textarea
-                                                        placeholder="Write a note..."
-                                                        value={newNoteContent}
-                                                        onChange={e => setNewNoteContent(e.target.value)}
-                                                        className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary mb-3 min-h-[100px]"
-                                                        autoFocus
-                                                    />
-                                                    <div className="flex justify-end gap-2">
-                                                        <button onClick={() => setIsAddingNote(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                        <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-black bg-primary rounded hover:bg-primary/90">Add Note</button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="relative mb-6">
-                                                <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search"
-                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
-                                                />
-                                            </div>
-
-                                            <div className="flex-1 overflow-y-auto">
-                                                {notes.length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center h-64 text-center">
-                                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
-                                                            <MessageSquare size={32} />
-                                                        </div>
-                                                        <h4 className="text-gray-900 font-medium mb-1">No notes found</h4>
-                                                        <p className="text-gray-500 text-sm mb-4">Your filters does not match any notes. Please try again.</p>
-                                                        <button onClick={() => setIsAddingNote(true)} className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-medium hover:bg-primary/90">
-                                                            + Add Note
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-4">
-                                                        {notes.map(note => (
-                                                            <div key={note.id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
-                                                                <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{note.content}</p>
-                                                                <div className="flex justify-between items-center text-xs text-gray-500">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Clock size={12} />
-                                                                        <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                                                        <div className="flex-1 overflow-y-auto">
+                                                            {tasks.length === 0 ? (
+                                                                <div className="flex flex-col items-center justify-center h-64 text-center">
+                                                                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
+                                                                        <CheckSquare size={32} />
                                                                     </div>
-                                                                    <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600">
-                                                                        <Trash2 size={14} />
+                                                                    <h4 className="text-gray-900 font-medium mb-1">No tasks found</h4>
+                                                                    <p className="text-gray-500 text-sm mb-4">There are no tasks available</p>
+                                                                    <button onClick={() => setIsAddingTask(true)} className="px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-brand-blue/90">
+                                                                        + Add New Task
                                                                     </button>
                                                                 </div>
+                                                            ) : (
+                                                                <div className="space-y-3">
+                                                                    {tasks.map(task => (
+                                                                        <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-brand-blue" />
+                                                                                <div className="flex flex-col">
+                                                                                    <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
+                                                                                    {task.dueDate && (
+                                                                                        <span className="text-xs text-gray-500">Due: {task.dueDate} {task.dueTime}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">
+                                                                                <Trash2 size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="animate-in fade-in slide-in-from-right-4 h-full flex flex-col">
+                                                        <div className="flex items-center gap-2 mb-6">
+                                                            <button onClick={() => setIsAddingTask(false)} className="text-gray-500 hover:text-gray-700">
+                                                                <ChevronDown className="rotate-90" size={20} />
+                                                            </button>
+                                                            <h3 className="text-lg font-bold text-gray-900">Add Task</h3>
+                                                        </div>
+
+                                                        <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Title <span className="text-red-500">*</span></label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Task title"
+                                                                    value={newTaskTitle}
+                                                                    onChange={e => setNewTaskTitle(e.target.value)}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
                                                             </div>
-                                                        ))}
+
+                                                            <div>
+                                                                <button className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                                                    <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+                                                                        <div className="w-2 h-0.5 bg-gray-600"></div>
+                                                                    </div>
+                                                                    Remove description
+                                                                </button>
+                                                                <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                                                    <div className="flex items-center gap-2 p-2 border-b border-gray-300 bg-gray-50 text-gray-600">
+                                                                        <button className="p-1 hover:bg-gray-200 rounded"><b className="font-serif font-bold">B</b></button>
+                                                                        <button className="p-1 hover:bg-gray-200 rounded"><i className="font-serif italic">I</i></button>
+                                                                        <button className="p-1 hover:bg-gray-200 rounded"><u className="font-serif underline">U</u></button>
+                                                                        <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                                                                        <button className="p-1 hover:bg-gray-200 rounded text-xs">Link</button>
+                                                                    </div>
+                                                                    <textarea
+                                                                        placeholder="Enter a description..."
+                                                                        className="w-full p-3 text-sm focus:outline-none min-h-[120px] resize-none"
+                                                                        maxLength={2000}
+                                                                    ></textarea>
+                                                                    <div className="p-2 text-right text-xs text-gray-400 border-t border-gray-100">
+                                                                        0 / 2000 Characters
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Due date and time (IST)</label>
+                                                                <div className="flex gap-4">
+                                                                    <div className="relative flex-1">
+                                                                        <input
+                                                                            type="date"
+                                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                            defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="relative w-32">
+                                                                        <input
+                                                                            type="time"
+                                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                            defaultValue="08:00"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                <span className="text-sm font-medium text-gray-900">Recurring tasks</span>
+                                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                                    <input type="checkbox" className="sr-only peer" />
+                                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue"></div>
+                                                                </label>
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Assign to</label>
+                                                                <select className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue">
+                                                                    <option value="">Select assignee</option>
+                                                                    <option value={currentUser?.id || 'me'}>Me</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                                                            <button
+                                                                onClick={() => setIsAddingTask(false)}
+                                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleAddTask}
+                                                                className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90"
+                                                            >
+                                                                Save
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        </section>
+                                            </section>
+                                        )}
+
+                                        {/* NOTES TAB */}
+                                        {activeTab === 'notes' && (
+                                            <section className="h-full flex flex-col">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h3 className="text-lg font-bold text-gray-900">Notes</h3>
+                                                    <div className="flex gap-2">
+                                                        <button className="p-2 text-gray-400 hover:text-gray-600"><Filter size={18} /></button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mb-6">
+                                                    <button
+                                                        onClick={() => setIsAddingNote(true)}
+                                                        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-brand-blue font-medium hover:bg-blue-50 hover:border-brand-blue transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={18} /> Add Note
+                                                    </button>
+                                                </div>
+
+                                                {isAddingNote && (
+                                                    <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                                                        <textarea
+                                                            placeholder="Write a note..."
+                                                            value={newNoteContent}
+                                                            onChange={e => setNewNoteContent(e.target.value)}
+                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue mb-3 min-h-[100px]"
+                                                            autoFocus
+                                                        />
+                                                        <div className="flex justify-end gap-2">
+                                                            <button onClick={() => setIsAddingNote(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
+                                                            <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-white bg-brand-blue rounded hover:bg-brand-blue/90">Add Note</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="relative mb-6">
+                                                    <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search"
+                                                        className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                    />
+                                                </div>
+
+                                                <div className="flex-1 overflow-y-auto">
+                                                    {notes.length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center h-64 text-center">
+                                                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-brand-blue">
+                                                                <MessageSquare size={32} />
+                                                            </div>
+                                                            <h4 className="text-gray-900 font-medium mb-1">No notes found</h4>
+                                                            <p className="text-gray-500 text-sm mb-4">Your filters does not match any notes. Please try again.</p>
+                                                            <button onClick={() => setIsAddingNote(true)} className="px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-brand-blue/90">
+                                                                + Add Note
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-4">
+                                                            {notes.map(note => (
+                                                                <div key={note.id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
+                                                                    <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{note.content}</p>
+                                                                    <div className="flex justify-between items-center text-xs text-gray-500">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <Clock size={12} />
+                                                                            <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                                                                        </div>
+                                                                        <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600">
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </section>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                                <div className="text-xs text-gray-500">
+                                    {editingId && (
+                                        <>
+                                            <p>Created By: Digital Mojo</p>
+                                            <p>Created on: {editingId && opportunities.find(o => o.id === editingId)?.createdAt ? format(new Date(opportunities.find(o => o.id === editingId)!.createdAt!), 'MMM d, yyyy h:mm a') : '-'} (IST)</p>
+                                            <a href="#" className="text-brand-blue hover:underline flex items-center gap-1 mt-1">
+                                                Audit Logs: {editingId} <Download size={12} />
+                                            </a>
+                                        </>
                                     )}
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                                        disabled={isSubmitting}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            editingId ? 'Update' : 'Create'
+                                        )}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Modal Footer */}
-                        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
-                                {editingId && (
-                                    <>
-                                        <p>Created By: Digital Mojo</p>
-                                        <p>Created on: {editingId && opportunities.find(o => o.id === editingId)?.createdAt ? format(new Date(opportunities.find(o => o.id === editingId)!.createdAt!), 'MMM d, yyyy h:mm a') : '-'} (IST)</p>
-                                        <a href="#" className="text-brand-blue hover:underline flex items-center gap-1 mt-1">
-                                            Audit Logs: {editingId} <Download size={12} />
-                                        </a>
-                                    </>
-                                )}
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                                    disabled={isSubmitting}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className="px-4 py-2 text-sm font-medium text-black bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        editingId ? 'Update' : 'Create'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
                     </div>
-                </div>
-            )
+                )
             }
 
 
@@ -1669,7 +1747,7 @@ const Opportunities: React.FC = () => {
                                     type="text"
                                     value={stage.title}
                                     onChange={(e) => handleStageChange(index, 'title', e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+                                    className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-blue focus:border-brand-blue block p-2.5"
                                     placeholder="Stage Name"
                                 />
                             </div>
@@ -1692,7 +1770,7 @@ const Opportunities: React.FC = () => {
                 </div>
                 <button
                     onClick={handleAddStage}
-                    className="mt-4 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:border-primary hover:text-brand-blue transition-colors flex items-center justify-center gap-2"
+                    className="mt-4 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:border-brand-blue hover:text-brand-blue transition-colors flex items-center justify-center gap-2"
                 >
                     <Plus size={20} /> Add Stage
                 </button>

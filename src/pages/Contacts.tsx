@@ -75,8 +75,25 @@ const Contacts: React.FC = () => {
     }, [id, contacts, fetchContact, navigate]);
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const filterRef = useRef<HTMLDivElement>(null);
     const [filterType, setFilterType] = useState('All');
     const [filterTag, setFilterTag] = useState('');
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterOpen(false);
+            }
+        };
+
+        if (isFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isFilterOpen]);
 
     const filteredContacts = contacts.filter(contact => {
         // Search is now handled server-side, but we keep client-side filter for Type and Tag
@@ -472,7 +489,7 @@ const Contacts: React.FC = () => {
 
             {/* Filters */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 flex flex-col gap-4 shrink-0">
+                <div className="p-4 border-b border-gray-200 flex flex-col gap-4 shrink-0" ref={filterRef}>
                     <div className="flex gap-4">
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
@@ -525,12 +542,18 @@ const Contacts: React.FC = () => {
                                     className="p-2 border border-gray-300 rounded-md text-sm bg-white focus:ring-1 focus:ring-primary"
                                 />
                             </div>
-                            <div className="flex items-end">
+                            <div className="flex items-end gap-2">
                                 <button
                                     onClick={() => { setFilterType('All'); setFilterTag(''); }}
                                     className="text-sm text-red-500 hover:text-red-700 font-medium px-2 py-2"
                                 >
                                     Clear Filters
+                                </button>
+                                <button
+                                    onClick={() => setIsFilterOpen(false)}
+                                    className="px-4 py-2 bg-primary text-gray-900 rounded-lg text-sm font-bold hover:bg-primary/90 shadow-sm"
+                                >
+                                    Done
                                 </button>
                             </div>
                         </div>
