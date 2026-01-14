@@ -11,7 +11,8 @@ import {
   LogOut,
   User as UserIcon,
   Settings,
-  Menu
+  Menu,
+  Bell
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import CommandPalette from './CommandPalette';
@@ -101,8 +102,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 to={item.path}
                 onClick={() => setIsSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 ${isActive
-                    ? 'bg-primary text-black font-semibold'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-primary text-black font-semibold'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
               >
                 <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className={isActive ? 'text-white' : ''} />
@@ -165,6 +166,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors">
+                <Bell size={20} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
+              </button>
             </div>
 
             <div className="relative" ref={profileRef}>

@@ -13,9 +13,10 @@ interface DraggableCardProps {
     color: string;
     onEdit: (opp: Opportunity) => void;
     onDelete: (id: string) => void;
+    nextAppointment?: { date: string; time: string; title: string };
 }
 
-const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDelete }) => {
+const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDelete, nextAppointment }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: item.id,
     });
@@ -86,6 +87,22 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                         <span className="text-gray-500 w-32 shrink-0">Opportunity Value:</span>
                         <span className="text-gray-700 font-medium">₹{Number(item.value).toLocaleString()}</span>
                     </div>
+                    {item.calendar && (
+                        <div className="flex text-xs items-center gap-1 mt-1">
+                            <Calendar size={12} className="text-brand-blue" />
+                            <span className="text-gray-500 shrink-0">Calendar:</span>
+                            <span className="text-brand-blue font-medium truncate">{item.calendar.split('@')[0]}</span>
+                        </div>
+                    )}
+                    {nextAppointment && (
+                        <div className="flex text-xs items-center gap-1 mt-2 p-1.5 bg-blue-50/50 rounded border border-blue-100/50 animate-pulse-slow">
+                            <Clock size={12} className="text-brand-blue" />
+                            <span className="text-gray-500 shrink-0">Next:</span>
+                            <span className="text-brand-blue font-bold truncate">
+                                {format(new Date(nextAppointment.date), 'MMM d')} @ {nextAppointment.time}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -118,7 +135,7 @@ interface DroppableColumnProps {
     totalValue: number;
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit, onDelete, hasMore, onLoadMore, isLoading, totalCount, totalValue }) => {
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit, onDelete, hasMore, onLoadMore, isLoading, totalCount, totalValue, appointments }) => {
     const { setNodeRef } = useDroppable({
         id: stage.id,
     });
@@ -168,9 +185,13 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
             </div>
 
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar min-h-[100px] pr-1 pb-2">
-                {items.map(item => (
-                    <DraggableCard key={item.id} item={item} color={stage.color} onEdit={onEdit} onDelete={onDelete} />
-                ))}
+                {items.map(item => {
+                    const apt = appointments
+                        .filter(a => a.contactId === item.contactId && new Date(`${a.date}T${a.time}`) >= new Date())
+                        .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0];
+
+                    return <DraggableCard key={item.id} item={item} color={stage.color} onEdit={onEdit} onDelete={onDelete} nextAppointment={apt} />;
+                })}
                 {/* Sentinel element for infinite scroll */}
                 <div ref={loadMoreRef} className="h-4">
                     {isLoading && hasMore && (
@@ -185,7 +206,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ stage, items, onEdit,
 };
 
 const Opportunities: React.FC = () => {
-    const { opportunities, stages, stageCounts, stagePagination, fetchOpportunities, fetchOpportunitiesByStage, loadMoreByStage, fetchStageCounts, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities, isLoading } = useStore();
+    const { opportunities, appointments, stages, stageCounts, stagePagination, fetchOpportunities, fetchOpportunitiesByStage, loadMoreByStage, fetchStageCounts, updateOpportunity, addOpportunity, deleteOpportunity, bulkDeleteOpportunities, updateStages, currentUser, addAppointment, fetchAppointments, contacts, fetchContacts, addContact, updateContact, deleteContact, hasMoreOpportunities, loadMoreOpportunities, isLoading } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
@@ -235,11 +256,12 @@ const Opportunities: React.FC = () => {
         fetchOpportunities();
         fetchContacts();
         fetchStageCounts();
+        fetchAppointments();
         // Fetch initial opportunities for each stage (for board view)
         stages.forEach(stage => {
             fetchOpportunitiesByStage(stage.id);
         });
-    }, [fetchOpportunities, fetchContacts, fetchStageCounts, fetchOpportunitiesByStage, currentUser]);
+    }, [fetchOpportunities, fetchContacts, fetchStageCounts, fetchAppointments, fetchOpportunitiesByStage, currentUser]);
 
     useEffect(() => {
         setTempStages(stages);
@@ -1020,6 +1042,7 @@ const Opportunities: React.FC = () => {
                                         isLoading={stagePagination[stage.id]?.isLoading ?? false}
                                         totalCount={stageCounts[stage.id]?.count || 0}
                                         totalValue={stageCounts[stage.id]?.value || 0}
+                                        appointments={appointments}
                                     />
                                 ))}
                             </div>
@@ -1048,6 +1071,7 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Calendar</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tags</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Created On</th>
@@ -1085,8 +1109,25 @@ const Opportunities: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-sm text-gray-700">₹{Number(opp.value).toLocaleString()}</td>
-                                            <td className="p-4 text-sm text-gray-500 max-w-[200px] truncate" title={opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : ''}>
-                                                {opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : '-'}
+                                            <td className="p-4 text-sm text-gray-600 truncate max-w-[150px]">{opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : '-'}</td>
+                                            <td className="p-4">
+                                                {appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).length > 0 ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold text-brand-blue">
+                                                            {format(new Date(appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0].date), 'MMM d')}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400">
+                                                            {appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0].time}
+                                                        </span>
+                                                    </div>
+                                                ) : '-'}
+                                            </td>
+                                            <td className="p-4">
+                                                {opp.calendar ? (
+                                                    <span className="px-2 py-1 bg-blue-50 text-brand-blue text-xs font-medium rounded border border-blue-100">
+                                                        {opp.calendar.split('@')[0]}
+                                                    </span>
+                                                ) : <span className="text-gray-400 text-sm">-</span>}
                                             </td>
                                             <td className="p-4">
                                                 <span className={`uppercase text-xs font-bold ${opp.status === 'Open' ? 'text-green-600' : 'text-gray-500'}`}>
