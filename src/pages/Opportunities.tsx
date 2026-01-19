@@ -1645,6 +1645,11 @@ const Opportunities: React.FC = () => {
                                                                                                 {task.assignee === currentUser?.email || task.assignee === currentUser?.id ? 'Me' : task.assignee.split('@')[0]}
                                                                                             </span>
                                                                                         )}
+                                                                                        {formData.contactPhone && (
+                                                                                            <span className="text-[10px] text-green-600 font-medium bg-green-50 px-1 rounded flex items-center gap-0.5">
+                                                                                                <Phone size={8} /> {formData.contactPhone}
+                                                                                            </span>
+                                                                                        )}
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -1673,7 +1678,15 @@ const Opportunities: React.FC = () => {
                                                             }} className="text-gray-500 hover:text-gray-700">
                                                                 <ChevronDown className="rotate-90" size={20} />
                                                             </button>
-                                                            <h3 className="text-lg font-bold text-gray-900">{editingTaskId ? 'Edit Task' : 'Add Task'}</h3>
+                                                            <div className="flex items-center gap-3">
+                                                                <h3 className="text-lg font-bold text-gray-900">{editingTaskId ? 'Edit Task' : 'Add Task'}</h3>
+                                                                {formData.contactPhone && (
+                                                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-semibold">
+                                                                        <Phone size={12} />
+                                                                        {formData.contactPhone}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
 
                                                         <div className="space-y-6 flex-1 overflow-y-auto pr-2">
