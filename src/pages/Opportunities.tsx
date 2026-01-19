@@ -1664,7 +1664,7 @@ const Opportunities: React.FC = () => {
                                                                                                         )
                                                                                                     ) : (
                                                                                                         <>
-                                                                                                            {task.assignee === (task.assignedBy || task.assignee) ? (
+                                                                                                            {task.assignedBy && task.assignee === task.assignedBy ? (
                                                                                                                 `Self Assigned by ${task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}`
                                                                                                             ) : (
                                                                                                                 <>
@@ -1843,7 +1843,7 @@ const Opportunities: React.FC = () => {
                                                                     className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                                 >
                                                                     <option value="">Select assignee</option>
-                                                                    <option value={currentUser?.id || 'me'}>Me ({currentUser?.name || 'CurrentUser'})</option>
+                                                                    <option value={currentUser?.email || currentUser?.id || 'me'}>Me ({currentUser?.name || 'CurrentUser'})</option>
                                                                     {TEAM_MEMBERS.map(member => (
                                                                         <option key={member.email} value={member.email}>
                                                                             {member.name}

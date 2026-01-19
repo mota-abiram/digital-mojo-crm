@@ -268,7 +268,7 @@ const Tasks: React.FC = () => {
                                                         )
                                                     ) : (
                                                         <>
-                                                            {task.assignee === (task.assignedBy || task.assignee) ? (
+                                                            {task.assignedBy && task.assignee === task.assignedBy ? (
                                                                 `• Self Assigned by ${task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}`
                                                             ) : (
                                                                 <>
@@ -368,7 +368,7 @@ const Tasks: React.FC = () => {
                                                 )
                                             ) : (
                                                 <>
-                                                    {selectedTask.assignee === (selectedTask.assignedBy || selectedTask.assignee) ? (
+                                                    {selectedTask.assignedBy && selectedTask.assignee === selectedTask.assignedBy ? (
                                                         <>
                                                             Self Assigned by <span className="font-medium">{selectedTask.assignee.includes('@') ? selectedTask.assignee.split('@')[0] : selectedTask.assignee}</span>
                                                         </>

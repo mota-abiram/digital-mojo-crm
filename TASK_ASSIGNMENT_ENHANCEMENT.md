@@ -59,9 +59,27 @@ const updatedTasks = tasks.map(t => t.id === editingTaskId ? {
 } : t);
 ```
 
----
+### 3. Enhanced Display Logic
+We have standardized the assignment display across:
+- **Opportunities Page** (Task List)
+- **Tasks Page** (Task List & Detail Modal)
 
-### 3. **Enhanced Task Display in Opportunities**
+**New Display Rules:**
+1.  **Logged-in User Self-Assigned**:
+    -   Condition: `assignee === currentUser && assignedBy === currentUser`
+    -   Display: `"• Self Assigned"`
+2.  **Logged-in User Assigned by Others**:
+    -   Condition: `assignee === currentUser && assignedBy !== currentUser`
+    -   Display: `"• Assigned by [Assigner Name]"`
+3.  **Other User Self-Assigned**:
+    -   Condition: `assignee !== currentUser && assignee === assignedBy`
+    -   Display: `"• Self Assigned by [User Name]"`
+4.  **Other User Assigned by Third Party**:
+    -   Condition: `assignee !== currentUser && assignee !== assignedBy`
+    -   Display: `"• Assigned to: [User Name] by [Assigner Name]"`
+
+*Note: User names are extracted from email (before '@') or used as-is if IDs.*
+
 **File**: `src/pages/Opportunities.tsx` (Lines 1644-1660)
 
 Updated task display logic to show:
