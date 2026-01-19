@@ -14,13 +14,7 @@ const Tasks: React.FC = () => {
 
     // ... (rest of memoization code)
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
-            </div>
-        );
-    }
+
 
     // Flatten tasks from all opportunities
     const allTasks = useMemo(() => {
@@ -125,6 +119,14 @@ const Tasks: React.FC = () => {
         if (isPast(date)) return <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">Overdue</span>;
         return <span className="text-gray-500">{format(date, 'MMM d')}</span>;
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 h-full flex flex-col bg-gray-50/50">
