@@ -70,6 +70,30 @@ const Tasks: React.FC = () => {
         });
     }, [allTasks, filter, search, viewScope, currentUser]);
 
+    // Calculate task counts for UI indicators
+    const myTasksCount = useMemo(() => {
+        return allTasks.filter(task =>
+            (task.assignee === currentUser?.id || task.assignee === currentUser?.email) &&
+            !!(currentUser?.id || currentUser?.email)
+        ).length;
+    }, [allTasks, currentUser]);
+
+    const allTasksCount = allTasks.length;
+
+    // Diagnostic logging (can be removed in production)
+    React.useEffect(() => {
+        console.log('🔍 Task Visibility Debug:', {
+            currentUser: currentUser?.email,
+            totalOpportunities: opportunities.length,
+            totalTasks: allTasksCount,
+            myTasks: myTasksCount,
+            filteredTasks: filteredTasks.length,
+            viewScope,
+            filter,
+            searchActive: !!search
+        });
+    }, [allTasks, filteredTasks, viewScope, filter, search, currentUser, opportunities, allTasksCount, myTasksCount]);
+
     const handleToggleTask = (task: Task & { opportunityId: string }) => {
         const opp = opportunities.find(o => o.id === task.opportunityId);
         if (!opp || !opp.tasks) return;
@@ -124,10 +148,13 @@ const Tasks: React.FC = () => {
                             <button
                                 key={v}
                                 onClick={() => setViewScope(v)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${viewScope === v ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors flex items-center gap-2 ${viewScope === v ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {v === 'my' ? 'My Tasks' : 'All Tasks'}
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${viewScope === v ? 'bg-white/20' : 'bg-gray-100'}`}>
+                                    {v === 'my' ? myTasksCount : allTasksCount}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -142,9 +169,28 @@ const Tasks: React.FC = () => {
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">No tasks found</h3>
                         <p className="text-gray-500 max-w-sm mb-6">
-                            {search || filter !== 'pending' || viewScope !== 'my' ? 'Try adjusting your search terms or filters.' : 'You have no tasks matching this filter. Great job!'}
+                            {viewScope === 'my' && myTasksCount === 0 && allTasksCount > 0 ? (
+                                <>
+                                    You have no tasks assigned to you. There {allTasksCount === 1 ? 'is' : 'are'}{' '}
+                                    <strong>{allTasksCount}</strong> task{allTasksCount === 1 ? '' : 's'} in the system.
+                                </>
+                            ) : search ? (
+                                'No tasks match your search. Try different keywords.'
+                            ) : filter !== 'all' ? (
+                                `No ${filter} tasks found. Try changing the filter.`
+                            ) : (
+                                'You have no tasks. Great job staying on top of things!'
+                            )}
                         </p>
-                        {(search || filter !== 'all' || viewScope !== 'all') && (
+                        {viewScope === 'my' && myTasksCount === 0 && allTasksCount > 0 && (
+                            <button
+                                onClick={() => setViewScope('all')}
+                                className="px-4 py-2 bg-brand-blue text-white rounded-lg font-medium hover:bg-brand-blue/90 transition-colors mb-4"
+                            >
+                                View All Tasks ({allTasksCount})
+                            </button>
+                        )}
+                        {(search || filter !== 'all' || viewScope !== 'all') && !(viewScope === 'my' && myTasksCount === 0 && allTasksCount > 0) && (
                             <button
                                 onClick={() => {
                                     setSearch('');
