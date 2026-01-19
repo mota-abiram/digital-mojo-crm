@@ -5,8 +5,9 @@ import { format, parseISO, isPast, isToday, isTomorrow } from 'date-fns';
 import { Task } from '../types';
 
 const Tasks: React.FC = () => {
-    const { opportunities, updateOpportunity } = useStore();
+    const { opportunities, updateOpportunity, currentUser } = useStore();
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
+    const [viewScope, setViewScope] = useState<'my' | 'all'>('my');
     const [search, setSearch] = useState('');
 
     // Flatten tasks from all opportunities
@@ -33,7 +34,11 @@ const Tasks: React.FC = () => {
                 filter === 'all' ? true :
                     filter === 'completed' ? task.isCompleted :
                         !task.isCompleted;
-            return matchesSearch && matchesFilter;
+
+            const isAssignedToMe = task.assignee === currentUser?.id || task.assignee === currentUser?.email;
+            const matchesScope = viewScope === 'all' ? true : isAssignedToMe;
+
+            return matchesSearch && matchesFilter && matchesScope;
         }).sort((a, b) => {
             // Sort by due date
             if (!a.dueDate) return 1;
@@ -79,6 +84,18 @@ const Tasks: React.FC = () => {
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary w-64"
                         />
+                    </div>
+                    <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+                        {(['my', 'all'] as const).map((v) => (
+                            <button
+                                key={v}
+                                onClick={() => setViewScope(v)}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${viewScope === v ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {v === 'my' ? 'My Tasks' : 'All Tasks'}
+                            </button>
+                        ))}
                     </div>
                     <div className="flex bg-white border border-gray-200 rounded-lg p-1">
                         {(['all', 'pending', 'completed'] as const).map((f) => (
@@ -136,6 +153,11 @@ const Tasks: React.FC = () => {
                                             <ArrowRight size={12} />
                                             {task.opportunityName}
                                         </span>
+                                        {task.assignee && (
+                                            <span className="flex items-center gap-1 text-blue-600 font-medium">
+                                                • Assigned: {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
+                                            </span>
+                                        )}
                                         {task.dueDate && (
                                             <span className="flex items-center gap-1">
                                                 <Calendar size={12} />

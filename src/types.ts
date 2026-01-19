@@ -51,7 +51,7 @@ export interface Opportunity {
   companyName?: string;
   source?: string;
   calendar?: string;
-  pipelineId?: string;
+  notes?: string;
   createdAt?: string;
   updatedAt?: string;
   tasks?: Task[];

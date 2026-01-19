@@ -87,22 +87,6 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                         <span className="text-gray-500 w-32 shrink-0">Opportunity Value:</span>
                         <span className="text-gray-700 font-medium">₹{Number(item.value).toLocaleString()}</span>
                     </div>
-                    {item.calendar && (
-                        <div className="flex text-xs items-center gap-1 mt-1">
-                            <Calendar size={12} className="text-brand-blue" />
-                            <span className="text-gray-500 shrink-0">Calendar:</span>
-                            <span className="text-brand-blue font-medium truncate">{item.calendar.split('@')[0]}</span>
-                        </div>
-                    )}
-                    {nextAppointment && (
-                        <div className="flex text-xs items-center gap-1 mt-2 p-1.5 bg-blue-50/50 rounded border border-blue-100/50 animate-pulse-slow">
-                            <Clock size={12} className="text-brand-blue" />
-                            <span className="text-gray-500 shrink-0">Next:</span>
-                            <span className="text-brand-blue font-bold truncate">
-                                {format(new Date(nextAppointment.date), 'MMM d')} @ {nextAppointment.time}
-                            </span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer */}
@@ -228,7 +212,6 @@ const Opportunities: React.FC = () => {
 
         tags: '',
         calendar: '',
-        pipelineId: 'Marketing Pipeline',
         contactValue: 'Standard'
     });
 
@@ -236,9 +219,21 @@ const Opportunities: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [newTaskDescription, setNewTaskDescription] = useState('');
+    const [newTaskDueDate, setNewTaskDueDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [newTaskDueTime, setNewTaskDueTime] = useState('08:00');
+    const [newTaskAssignee, setNewTaskAssignee] = useState('');
+    const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(false);
     const [newNoteContent, setNewNoteContent] = useState('');
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [isAddingNote, setIsAddingNote] = useState(false);
+
+    const TEAM_MEMBERS = [
+        { name: 'Komal', email: 'komal@digitalmojo.in' },
+        { name: 'Dhiraj', email: 'dhiraj@digitalmojo.in' },
+        { name: 'Rupal', email: 'rupal@digitalmojo.in' },
+        { name: 'Veda', email: 'veda@digitalmojo.in' }
+    ];
 
     // Appointment State
     const [appointmentForm, setAppointmentForm] = useState({
@@ -276,7 +271,6 @@ const Opportunities: React.FC = () => {
     const filterRef = useRef<HTMLDivElement>(null);
     const sortRef = useRef<HTMLDivElement>(null);
     const [filters, setFilters] = useState({
-        pipelineId: '',
         stage: '',
         status: ''
     });
@@ -355,11 +349,10 @@ const Opportunities: React.FC = () => {
                 opp.contactPhone?.includes(searchTerm);
 
             // Advanced Filters
-            const matchesPipeline = filters.pipelineId ? opp.pipelineId === filters.pipelineId : true;
             const matchesStage = filters.stage ? opp.stage === filters.stage : true;
             const matchesStatus = filters.status ? opp.status === filters.status : true;
 
-            return matchesSearch && matchesPipeline && matchesStage && matchesStatus;
+            return matchesSearch && matchesStage && matchesStatus;
         }).sort((a, b) => {
             if (sortBy === 'none') {
                 const dateA = new Date(a.createdAt || 0).getTime();
@@ -384,7 +377,7 @@ const Opportunities: React.FC = () => {
                 return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
             }
         });
-    }, [opportunities, searchTerm, filters.pipelineId, filters.stage, filters.status, sortOrder, sortBy, stages]);
+    }, [opportunities, searchTerm, filters.stage, filters.status, sortOrder, sortBy, stages]);
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -463,7 +456,6 @@ const Opportunities: React.FC = () => {
                 companyName: linkedContact?.companyName || opp.companyName || '',
                 tags: opp.tags ? opp.tags.join(', ') : '',
                 calendar: opp.calendar || '',
-                pipelineId: opp.pipelineId || 'Marketing Pipeline',
                 contactValue: linkedContact?.Value || 'Standard'
             });
             setTasks(opp.tasks || []);
@@ -472,7 +464,7 @@ const Opportunities: React.FC = () => {
             setEditingId(null);
             setFormData({
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
-                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', pipelineId: 'Marketing Pipeline', contactValue: 'Standard'
+                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', contactValue: 'Standard'
             });
             setTasks([]);
             setNotes([]);
@@ -542,16 +534,14 @@ const Opportunities: React.FC = () => {
             name: formData.name,
             value: Number(formData.value),
             stage: formData.stage,
-            status: formData.status as any,
             source: formData.source,
             contactName: formData.contactName,
             contactEmail: formData.contactEmail,
             contactPhone: formData.contactPhone,
             companyName: formData.companyName,
             contactId: finalContactId,
-            pipelineId: formData.pipelineId,
             calendar: formData.calendar,
-            tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+            status: formData.status as any,
             updatedAt: new Date().toISOString(),
             tasks: tasks,
             notes: notes
@@ -596,10 +586,20 @@ const Opportunities: React.FC = () => {
         const newTask: Task = {
             id: Date.now().toString(),
             title: newTaskTitle,
+            description: newTaskDescription,
+            dueDate: newTaskDueDate,
+            dueTime: newTaskDueTime,
+            isRecurring: newTaskIsRecurring,
+            assignee: newTaskAssignee,
             isCompleted: false
         };
         setTasks([...tasks, newTask]);
         setNewTaskTitle('');
+        setNewTaskDescription('');
+        setNewTaskDueDate(format(new Date(), 'yyyy-MM-dd'));
+        setNewTaskDueTime('08:00');
+        setNewTaskAssignee('');
+        setNewTaskIsRecurring(false);
         setIsAddingTask(false);
     };
 
@@ -772,7 +772,6 @@ const Opportunities: React.FC = () => {
                             contactPhone: contactPhone || '',
                             companyName: normalizedRow['company name'] || normalizedRow['company'] || '',
                             contactId: finalContactId,
-                            pipelineId: normalizedRow['pipeline'] || 'Marketing Pipeline',
                             tags: normalizedRow['tags'] ? normalizedRow['tags'].split(',').map((t: string) => t.trim()) : [],
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
@@ -809,14 +808,13 @@ const Opportunities: React.FC = () => {
             'Opportunity Name': opp.name,
             'Value': opp.value,
             'Stage': stages.find(s => s.id === opp.stage)?.title || opp.stage,
-            'Status': opp.status,
+            'Notes': opp.notes && opp.notes.length > 0 ? (opp.notes[opp.notes.length - 1] as any).content : '',
             'Source': opp.source,
             'Contact Name': opp.contactName,
             'Contact Email': opp.contactEmail,
             'Contact Phone': opp.contactPhone,
             'Company Name': opp.companyName,
-            'Pipeline': opp.pipelineId,
-            'Tags': opp.tags.join(', '),
+            'Status': opp.status,
             'Created At': opp.createdAt,
             'Updated At': opp.updatedAt
         }));
@@ -968,18 +966,6 @@ const Opportunities: React.FC = () => {
                         {isFilterOpen && (
                             <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Pipeline</label>
-                                    <select
-                                        value={filters.pipelineId}
-                                        onChange={(e) => setFilters(prev => ({ ...prev, pipelineId: e.target.value }))}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
-                                    >
-                                        <option value="">All Pipelines</option>
-                                        <option value="Marketing Pipeline">Marketing Pipeline</option>
-                                        <option value="Sales Pipeline">Sales Pipeline</option>
-                                    </select>
-                                </div>
-                                <div>
                                     <label className="block text-xs font-semibold text-gray-500 mb-1">Stage</label>
                                     <select
                                         value={filters.stage}
@@ -1006,7 +992,7 @@ const Opportunities: React.FC = () => {
                                 </div>
                                 <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                                     <button
-                                        onClick={() => setFilters({ pipelineId: '', stage: '', status: '' })}
+                                        onClick={() => setFilters({ stage: '', status: '' })}
                                         className="text-xs text-red-600 hover:text-red-700 font-medium"
                                     >
                                         Clear Filters
@@ -1066,14 +1052,11 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Opportunity</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Contact</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Pipeline</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Calendar</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Tags</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Created On</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 text-right">Actions</th>
                                     </tr>
@@ -1101,45 +1084,43 @@ const Opportunities: React.FC = () => {
                                                 ) : <span className="text-gray-400 text-sm">-</span>}
                                             </td>
                                             <td className="p-4 text-sm text-gray-600">{opp.contactPhone || '-'}</td>
-                                            <td className="p-4 text-sm text-gray-600">{opp.contactEmail || '-'}</td>
-                                            <td className="p-4 text-sm text-gray-600">{opp.pipelineId || '-'}</td>
+                                            <td className="p-4 text-sm text-gray-600 relative group/note">
+                                                {(() => {
+                                                    const latestNoteObj = opp.notes && opp.notes.length > 0
+                                                        ? ([...opp.notes].sort((a, b) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime())[0] as any)
+                                                        : null;
+                                                    const latestNoteContent = latestNoteObj ? latestNoteObj.content : '-';
+                                                    return (
+                                                        <>
+                                                            <div className="truncate max-w-[400px]">{latestNoteContent}</div>
+                                                            {latestNoteObj && (
+                                                                <div className="absolute z-50 invisible group-hover/note:visible bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs -top-2 left-3/4 ml-2 w-72 break-words pointer-events-none">
+                                                                    <div className="font-bold mb-1 text-blue-400">
+                                                                        {format(new Date(latestNoteObj.createdAt), 'MMM d, h:mm a')}
+                                                                    </div>
+                                                                    {latestNoteContent}
+                                                                    <div className="absolute top-4 -left-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium border border-gray-200">
                                                     {stages.find(s => s.id === opp.stage)?.title || opp.stage}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-sm text-gray-700">₹{Number(opp.value).toLocaleString()}</td>
-                                            <td className="p-4 text-sm text-gray-600 truncate max-w-[150px]">{opp.notes && opp.notes.length > 0 ? opp.notes[opp.notes.length - 1].content : '-'}</td>
+                                            <td className="p-4 text-sm text-gray-600">{opp.contactEmail || '-'}</td>
                                             <td className="p-4">
-                                                {appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).length > 0 ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-brand-blue">
-                                                            {format(new Date(appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0].date), 'MMM d')}
-                                                        </span>
-                                                        <span className="text-[10px] text-gray-400">
-                                                            {appointments.filter(a => a.contactId === opp.contactId && new Date(`${a.date}T${a.time}`) >= new Date()).sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())[0].time}
-                                                        </span>
-                                                    </div>
-                                                ) : '-'}
-                                            </td>
-                                            <td className="p-4">
-                                                {opp.calendar ? (
-                                                    <span className="px-2 py-1 bg-blue-50 text-brand-blue text-xs font-medium rounded border border-blue-100">
-                                                        {opp.calendar.split('@')[0]}
-                                                    </span>
-                                                ) : <span className="text-gray-400 text-sm">-</span>}
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`uppercase text-xs font-bold ${opp.status === 'Open' ? 'text-green-600' : 'text-gray-500'}`}>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full border ${opp.status === 'Won' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                    opp.status === 'Lost' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                        opp.status === 'Abandoned' ? 'bg-gray-50 text-gray-700 border-gray-100' :
+                                                            'bg-blue-50 text-blue-700 border-blue-100'
+                                                    }`}>
                                                     {opp.status}
                                                 </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex gap-1 flex-wrap">
-                                                    {opp.tags.map(tag => (
-                                                        <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-xs rounded border border-gray-200">{tag}</span>
-                                                    ))}
-                                                </div>
                                             </td>
                                             <td className="p-4 text-sm text-gray-500">
                                                 {opp.createdAt ? format(new Date(opp.createdAt), 'MMM d, yyyy h:mm a') : '-'}
@@ -1303,17 +1284,6 @@ const Opportunities: React.FC = () => {
 
                                                         <div className="grid grid-cols-2 gap-6">
                                                             <div>
-                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Pipeline</label>
-                                                                <select
-                                                                    value={formData.pipelineId}
-                                                                    onChange={(e) => setFormData({ ...formData, pipelineId: e.target.value })}
-                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                >
-                                                                    <option value="Marketing Pipeline">Marketing Pipeline</option>
-                                                                    <option value="Sales Pipeline">Sales Pipeline</option>
-                                                                </select>
-                                                            </div>
-                                                            <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Stage</label>
                                                                 <select
                                                                     value={formData.stage}
@@ -1326,19 +1296,6 @@ const Opportunities: React.FC = () => {
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-6">
-                                                            <div>
-                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Status</label>
-                                                                <select
-                                                                    value={formData.status}
-                                                                    onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                >
-                                                                    <option value="Open">Open</option>
-                                                                    <option value="Won">Won</option>
-                                                                    <option value="Lost">Lost</option>
-                                                                    <option value="Abandoned">Abandoned</option>
-                                                                </select>
-                                                            </div>
                                                             <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Value</label>
                                                                 <div className="relative">
@@ -1365,33 +1322,19 @@ const Opportunities: React.FC = () => {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Tags</label>
-                                                            <div className="relative">
-                                                                <Tag className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Add tags (comma separated)"
-                                                                    value={formData.tags}
-                                                                    onChange={e => setFormData({ ...formData, tags: e.target.value })}
-                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                />
-                                                            </div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Status</label>
+                                                            <select
+                                                                value={formData.status}
+                                                                onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            >
+                                                                <option value="Open">Open</option>
+                                                                <option value="Won">Won</option>
+                                                                <option value="Lost">Lost</option>
+                                                                <option value="Abandoned">Abandoned</option>
+                                                            </select>
                                                         </div>
 
-                                                        <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Calendar</label>
-                                                            <div className="relative">
-                                                                <Calendar className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                                                <select
-                                                                    value={formData.calendar}
-                                                                    onChange={e => setFormData({ ...formData, calendar: e.target.value })}
-                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                >
-                                                                    <option value="">Select calendar</option>
-                                                                    <option value={currentUser?.email}>{currentUser?.name}'s Calendar ({currentUser?.email})</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
 
 
                                                         <hr className="border-gray-200" />
@@ -1426,7 +1369,7 @@ const Opportunities: React.FC = () => {
                                                                 {notes.length === 0 && !isAddingNote ? (
                                                                     <p className="text-sm text-gray-400 italic">No notes yet.</p>
                                                                 ) : (
-                                                                    notes.map(note => (
+                                                                    [...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
                                                                         <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
                                                                             <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
                                                                             <div className="flex justify-between items-center text-xs text-gray-500">
@@ -1607,11 +1550,14 @@ const Opportunities: React.FC = () => {
                                                             </div>
 
                                                             <div>
-                                                                <button className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                                                <button
+                                                                    className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                                                                    onClick={() => setNewTaskDescription('')}
+                                                                >
                                                                     <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
                                                                         <div className="w-2 h-0.5 bg-gray-600"></div>
                                                                     </div>
-                                                                    Remove description
+                                                                    Clear description
                                                                 </button>
                                                                 <div className="border border-gray-300 rounded-lg overflow-hidden">
                                                                     <div className="flex items-center gap-2 p-2 border-b border-gray-300 bg-gray-50 text-gray-600">
@@ -1623,11 +1569,13 @@ const Opportunities: React.FC = () => {
                                                                     </div>
                                                                     <textarea
                                                                         placeholder="Enter a description..."
+                                                                        value={newTaskDescription}
+                                                                        onChange={e => setNewTaskDescription(e.target.value)}
                                                                         className="w-full p-3 text-sm focus:outline-none min-h-[120px] resize-none"
                                                                         maxLength={2000}
                                                                     ></textarea>
                                                                     <div className="p-2 text-right text-xs text-gray-400 border-t border-gray-100">
-                                                                        0 / 2000 Characters
+                                                                        {newTaskDescription.length} / 2000 Characters
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1638,15 +1586,17 @@ const Opportunities: React.FC = () => {
                                                                     <div className="relative flex-1">
                                                                         <input
                                                                             type="date"
+                                                                            value={newTaskDueDate}
+                                                                            onChange={e => setNewTaskDueDate(e.target.value)}
                                                                             className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                            defaultValue={format(new Date(), 'yyyy-MM-dd')}
                                                                         />
                                                                     </div>
                                                                     <div className="relative w-32">
                                                                         <input
                                                                             type="time"
+                                                                            value={newTaskDueTime}
+                                                                            onChange={e => setNewTaskDueTime(e.target.value)}
                                                                             className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                            defaultValue="08:00"
                                                                         />
                                                                     </div>
                                                                 </div>
@@ -1655,16 +1605,30 @@ const Opportunities: React.FC = () => {
                                                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                                                                 <span className="text-sm font-medium text-gray-900">Recurring tasks</span>
                                                                 <label className="relative inline-flex items-center cursor-pointer">
-                                                                    <input type="checkbox" className="sr-only peer" />
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="sr-only peer"
+                                                                        checked={newTaskIsRecurring}
+                                                                        onChange={e => setNewTaskIsRecurring(e.target.checked)}
+                                                                    />
                                                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-blue"></div>
                                                                 </label>
                                                             </div>
 
                                                             <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Assign to</label>
-                                                                <select className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue">
+                                                                <select
+                                                                    value={newTaskAssignee}
+                                                                    onChange={e => setNewTaskAssignee(e.target.value)}
+                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                >
                                                                     <option value="">Select assignee</option>
-                                                                    <option value={currentUser?.id || 'me'}>Me</option>
+                                                                    <option value={currentUser?.id || 'me'}>Me ({currentUser?.name || 'CurrentUser'})</option>
+                                                                    {TEAM_MEMBERS.map(member => (
+                                                                        <option key={member.email} value={member.email}>
+                                                                            {member.name}
+                                                                        </option>
+                                                                    ))}
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -1746,7 +1710,7 @@ const Opportunities: React.FC = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-4">
-                                                            {notes.map(note => (
+                                                            {[...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
                                                                 <div key={note.id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
                                                                     <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{note.content}</p>
                                                                     <div className="flex justify-between items-center text-xs text-gray-500">

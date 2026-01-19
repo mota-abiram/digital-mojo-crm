@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -59,6 +59,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setSearchResults(results);
   }, [searchQuery, contacts, opportunities]);
 
+  const pendingTasksCount = useMemo(() => {
+    let count = 0;
+    opportunities.forEach(opp => {
+      if (opp.tasks) {
+        opp.tasks.forEach(task => {
+          const isAssignedToMe = task.assignee === currentUser?.id || task.assignee === currentUser?.email;
+          if (!task.isCompleted && isAssignedToMe) {
+            count++;
+          }
+        });
+      }
+    });
+    return count;
+  }, [opportunities, currentUser]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -110,6 +125,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <span className={`font-medium ${isActive ? 'text-black' : 'text-white'}`}>
                   {item.label}
                 </span>
+                {item.path === '/tasks' && pendingTasksCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {pendingTasksCount}
+                  </span>
+                )}
               </Link>
             );
           })}

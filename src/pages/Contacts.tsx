@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Modal } from '../components/Modal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { COUNTRY_CODES } from '../utils/countryCodes';
+import { format } from 'date-fns';
 
 const Contacts: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -574,14 +575,14 @@ const Contacts: React.FC = () => {
                                     />
                                 </th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Name</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
 
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Company</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Type</th>
 
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Status</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -608,7 +609,18 @@ const Contacts: React.FC = () => {
                                                     <span className="font-medium text-gray-900">{contact.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-sm text-gray-600">{contact.email}</td>
+                                            <td className="p-4 text-sm text-gray-600 relative group/note">
+                                                <div className="truncate max-w-[400px]">{contact.notes || '-'}</div>
+                                                {contact.notes && (
+                                                    <div className="absolute z-50 invisible group-hover/note:visible bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs -top-2 left-3/4 ml-2 w-72 break-words pointer-events-none">
+                                                        <div className="font-bold mb-1 text-blue-400">
+                                                            {contact.createdAt ? format(new Date(contact.createdAt), 'MMM d, h:mm a') : 'Note'}
+                                                        </div>
+                                                        {contact.notes}
+                                                        <div className="absolute top-4 -left-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                                    </div>
+                                                )}
+                                            </td>
 
                                             <td className="p-4 text-sm text-gray-600">{contact.phone}</td>
                                             <td className="p-4 text-sm text-gray-600">{contact.companyName || '-'}</td>
@@ -628,13 +640,7 @@ const Contacts: React.FC = () => {
                                                     {contact.Value}
                                                 </span>
                                             </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full border ${contact.status === 'Active' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                    'bg-gray-50 text-gray-700 border-gray-100'
-                                                    }`}>
-                                                    {contact.status || 'Active'}
-                                                </span>
-                                            </td>
+                                            <td className="p-4 text-sm text-gray-600">{contact.email}</td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
@@ -791,21 +797,7 @@ const Contacts: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-900">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2.5"
-                            >
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Do Not Contact">Do Not Contact</option>
-                            </select>
-                        </div>
-                    </div>
+
                     <div>
                         <label className="block mb-2 text-sm font-medium text-gray-900">Notes</label>
                         <textarea
