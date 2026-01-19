@@ -6,7 +6,7 @@ import { Task } from '../types';
 
 const Tasks: React.FC = () => {
     const { opportunities, updateOpportunity, currentUser } = useStore();
-    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
+    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [viewScope, setViewScope] = useState<'my' | 'all'>('my');
     const [search, setSearch] = useState('');
 
@@ -30,23 +30,34 @@ const Tasks: React.FC = () => {
 
     const filteredTasks = useMemo(() => {
         return allTasks.filter(task => {
-            const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase());
+            const matchesSearch =
+                task.title.toLowerCase().includes(search.toLowerCase()) ||
+                (task.description || '').toLowerCase().includes(search.toLowerCase()) ||
+                task.opportunityName.toLowerCase().includes(search.toLowerCase());
+
             const matchesFilter =
                 filter === 'all' ? true :
                     filter === 'completed' ? task.isCompleted :
                         !task.isCompleted;
 
-            const isAssignedToMe = task.assignee === currentUser?.id || task.assignee === currentUser?.email;
+            const isAssignedToMe = (task.assignee === currentUser?.id || task.assignee === currentUser?.email) && !!(currentUser?.id || currentUser?.email);
             const matchesScope = viewScope === 'all' ? true : isAssignedToMe;
 
             return matchesSearch && matchesFilter && matchesScope;
         }).sort((a, b) => {
-            // Sort by due date
+            // Sort by completion (pending first) then by due date
+            if (a.isCompleted !== b.isCompleted) {
+                return a.isCompleted ? 1 : -1;
+            }
+            if (!a.dueDate && !b.dueDate) return 0;
             if (!a.dueDate) return 1;
             if (!b.dueDate) return -1;
-            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+
+            const dateA = new Date(`${a.dueDate}T${a.dueTime || '00:00'}`);
+            const dateB = new Date(`${b.dueDate}T${b.dueTime || '00:00'}`);
+            return dateA.getTime() - dateB.getTime();
         });
-    }, [allTasks, filter, search]);
+    }, [allTasks, filter, search, viewScope, currentUser]);
 
     const handleToggleTask = (task: Task & { opportunityId: string }) => {
         const opp = opportunities.find(o => o.id === task.opportunityId);
@@ -109,18 +120,6 @@ const Tasks: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                    <div className="flex bg-white border border-gray-200 rounded-lg p-1">
-                        {(['all', 'pending', 'completed'] as const).map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-primary text-gray-900 shadow-sm' : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {f}
-                            </button>
-                        ))}
-                    </div>
                 </div>
             </div>
 
@@ -131,9 +130,21 @@ const Tasks: React.FC = () => {
                             <CheckSquare size={40} />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">No tasks found</h3>
-                        <p className="text-gray-500 max-w-sm">
-                            {search ? 'Try adjusting your search terms.' : 'You have no tasks matching this filter. Great job!'}
+                        <p className="text-gray-500 max-w-sm mb-6">
+                            {search || filter !== 'pending' || viewScope !== 'my' ? 'Try adjusting your search terms or filters.' : 'You have no tasks matching this filter. Great job!'}
                         </p>
+                        {(search || filter !== 'all' || viewScope !== 'all') && (
+                            <button
+                                onClick={() => {
+                                    setSearch('');
+                                    setFilter('all');
+                                    setViewScope('all');
+                                }}
+                                className="text-brand-blue font-medium hover:underline"
+                            >
+                                Clear all filters
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="grid gap-4 max-w-5xl mx-auto">
@@ -177,7 +188,7 @@ const Tasks: React.FC = () => {
                                             </span>
                                         )}
                                         {task.assignee && (
-                                            <span className="flex items-center gap-1 text-blue-600 font-medium">
+                                            <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'text-blue-600 bg-blue-50 font-bold' : 'text-gray-500 bg-gray-100 font-medium'}`}>
                                                 • Assigned: {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
                                             </span>
                                         )}
@@ -200,7 +211,7 @@ const Tasks: React.FC = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
