@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { CheckSquare, Search, Filter, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { CheckSquare, Search, Filter, Calendar, Clock, ArrowRight, Phone } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isTomorrow } from 'date-fns';
 import { Task } from '../types';
 
@@ -12,14 +12,15 @@ const Tasks: React.FC = () => {
 
     // Flatten tasks from all opportunities
     const allTasks = useMemo(() => {
-        const tasks: (Task & { opportunityName: string; opportunityId: string })[] = [];
+        const tasks: (Task & { opportunityName: string; opportunityId: string; opportunityPhone?: string })[] = [];
         opportunities.forEach(opp => {
             if (opp.tasks) {
                 opp.tasks.forEach(task => {
                     tasks.push({
                         ...task,
                         opportunityName: opp.name,
-                        opportunityId: opp.id
+                        opportunityId: opp.id,
+                        opportunityPhone: opp.contactPhone
                     });
                 });
             }
@@ -56,6 +57,17 @@ const Tasks: React.FC = () => {
         );
 
         updateOpportunity(task.opportunityId, { tasks: updatedTasks });
+    };
+
+    const formatTimeToAMPM = (timeStr: string) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        let h = parseInt(hours);
+        const m = minutes;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12; // the hour '0' should be '12'
+        return `${h}:${m} ${ampm}`;
     };
 
     const getDueDateLabel = (dateStr?: string) => {
@@ -158,6 +170,12 @@ const Tasks: React.FC = () => {
                                             <ArrowRight size={12} />
                                             {task.opportunityName}
                                         </span>
+                                        {task.opportunityPhone && (
+                                            <span className="flex items-center gap-1 text-green-600 font-medium">
+                                                <Phone size={10} />
+                                                {task.opportunityPhone}
+                                            </span>
+                                        )}
                                         {task.assignee && (
                                             <span className="flex items-center gap-1 text-blue-600 font-medium">
                                                 • Assigned: {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
@@ -172,7 +190,7 @@ const Tasks: React.FC = () => {
                                         {task.dueTime && (
                                             <span className="flex items-center gap-1">
                                                 <Clock size={12} />
-                                                {task.dueTime}
+                                                {formatTimeToAMPM(task.dueTime)}
                                             </span>
                                         )}
                                     </div>
