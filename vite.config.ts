@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    base: '/crm/', // 🔴 REQUIRED for Hostinger / Apache
+    base: '/', // 🔴 REQUIRED for Hostinger / Apache
 
     plugins: [react()],
 

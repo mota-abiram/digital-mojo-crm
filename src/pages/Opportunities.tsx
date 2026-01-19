@@ -17,6 +17,7 @@ interface DraggableCardProps {
 }
 
 const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDelete, nextAppointment }) => {
+    const { stages } = useStore();
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: item.id,
     });
@@ -86,6 +87,29 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                     <div className="flex text-xs">
                         <span className="text-gray-500 w-32 shrink-0">Opportunity Value:</span>
                         <span className="text-gray-700 font-medium">₹{Number(item.value).toLocaleString()}</span>
+                    </div>
+
+                    {item.notes && item.notes.length > 0 && (
+                        <div className="flex text-xs">
+                            <span className="text-gray-500 w-32 shrink-0">Notes:</span>
+                            <span className="text-gray-700 truncate italic">
+                                "{item.notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].content}"
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="flex text-xs">
+                        <span className="text-gray-500 w-32 shrink-0">Follow up:</span>
+                        <span className="text-gray-700 font-medium">
+                            {item.followUpDate ? format(new Date(item.followUpDate), 'MMM d, yyyy') : 'No date set'}
+                        </span>
+                    </div>
+
+                    <div className="flex text-xs">
+                        <span className="text-gray-500 w-32 shrink-0">Stage:</span>
+                        <span className="text-gray-700 font-medium truncate">
+                            {stages.find(s => s.id === item.stage)?.title || item.stage}
+                        </span>
                     </div>
                 </div>
 
@@ -212,7 +236,8 @@ const Opportunities: React.FC = () => {
 
         tags: '',
         calendar: '',
-        contactValue: 'Standard'
+        contactValue: 'Standard',
+        followUpDate: ''
     });
 
     // Sub-items State
@@ -457,7 +482,8 @@ const Opportunities: React.FC = () => {
                 companyName: linkedContact?.companyName || opp.companyName || '',
                 tags: opp.tags ? opp.tags.join(', ') : '',
                 calendar: opp.calendar || '',
-                contactValue: linkedContact?.Value || 'Standard'
+                contactValue: linkedContact?.Value || 'Standard',
+                followUpDate: opp.followUpDate || ''
             });
             setTasks(opp.tasks || []);
             setNotes(opp.notes || []);
@@ -465,7 +491,7 @@ const Opportunities: React.FC = () => {
             setEditingId(null);
             setFormData({
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
-                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', contactValue: 'Standard'
+                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', contactValue: 'Standard', followUpDate: ''
             });
             setTasks([]);
             setNotes([]);
@@ -543,6 +569,7 @@ const Opportunities: React.FC = () => {
             contactId: finalContactId,
             calendar: formData.calendar,
             status: formData.status as any,
+            followUpDate: formData.followUpDate,
             updatedAt: new Date().toISOString(),
             tasks: tasks,
             notes: notes
@@ -590,6 +617,20 @@ const Opportunities: React.FC = () => {
         h = h % 12;
         h = h ? h : 12; // the hour '0' should be '12'
         return `${h}:${m} ${ampm}`;
+    };
+
+    const getTimeParts = (time24: string) => {
+        const [h, m] = (time24 || '08:00').split(':');
+        const hour24 = parseInt(h);
+        const hour12 = hour24 % 12 || 12;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        return { hour12, minutes: m, ampm };
+    };
+
+    const joinTimeParts = (h12: number, min: string, ampm: string) => {
+        let h24 = h12 % 12;
+        if (ampm === 'PM') h24 += 12;
+        return `${h24.toString().padStart(2, '0')}:${min}`;
     };
 
     // Task & Note Handlers
@@ -1092,6 +1133,7 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Contact</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Follow up</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
@@ -1144,6 +1186,9 @@ const Opportunities: React.FC = () => {
                                                         </>
                                                     );
                                                 })()}
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-600">
+                                                {opp.followUpDate ? format(new Date(opp.followUpDate), 'MMM d, yyyy') : '-'}
                                             </td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium border border-gray-200">
@@ -1422,6 +1467,19 @@ const Opportunities: React.FC = () => {
                                                                 )}
                                                             </div>
                                                         </div>
+
+                                                        <div className="pt-4 border-t border-gray-100 mt-4">
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Follow up</label>
+                                                            <div className="relative">
+                                                                <Calendar size={16} className="absolute left-3 top-2.5 text-gray-400" />
+                                                                <input
+                                                                    type="date"
+                                                                    value={formData.followUpDate}
+                                                                    onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </section>
                                             </>
@@ -1456,12 +1514,34 @@ const Opportunities: React.FC = () => {
                                                         </div>
                                                         <div>
                                                             <label className="block mb-1.5 text-sm font-medium text-gray-700">Time <span className="text-red-500">*</span></label>
-                                                            <input
-                                                                type="time"
-                                                                value={appointmentForm.time}
-                                                                onChange={e => setAppointmentForm({ ...appointmentForm, time: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                            />
+                                                            <div className="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 gap-1">
+                                                                <select
+                                                                    value={getTimeParts(appointmentForm.time).hour12}
+                                                                    onChange={e => setAppointmentForm({ ...appointmentForm, time: joinTimeParts(parseInt(e.target.value), getTimeParts(appointmentForm.time).minutes, getTimeParts(appointmentForm.time).ampm) })}
+                                                                    className="bg-transparent border-none p-1 text-sm focus:ring-0 outline-none w-14"
+                                                                >
+                                                                    {[...Array(12)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+                                                                </select>
+                                                                <span className="text-gray-400">:</span>
+                                                                <select
+                                                                    value={getTimeParts(appointmentForm.time).minutes}
+                                                                    onChange={e => setAppointmentForm({ ...appointmentForm, time: joinTimeParts(getTimeParts(appointmentForm.time).hour12, e.target.value, getTimeParts(appointmentForm.time).ampm) })}
+                                                                    className="bg-transparent border-none p-1 text-sm focus:ring-0 outline-none w-14"
+                                                                >
+                                                                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                                                                        <option key={m} value={m}>{m}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <select
+                                                                    value={getTimeParts(appointmentForm.time).ampm}
+                                                                    onChange={e => setAppointmentForm({ ...appointmentForm, time: joinTimeParts(getTimeParts(appointmentForm.time).hour12, getTimeParts(appointmentForm.time).minutes, e.target.value) })}
+                                                                    className="bg-transparent border-none p-1 text-sm font-bold text-brand-blue focus:ring-0 outline-none"
+                                                                >
+                                                                    <option value="AM">AM</option>
+                                                                    <option value="PM">PM</option>
+                                                                </select>
+                                                                <Clock size={16} className="text-gray-400 ml-auto" />
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -1650,13 +1730,35 @@ const Opportunities: React.FC = () => {
                                                                             className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                                         />
                                                                     </div>
-                                                                    <div className="relative w-32">
-                                                                        <input
-                                                                            type="time"
-                                                                            value={newTaskDueTime}
-                                                                            onChange={e => setNewTaskDueTime(e.target.value)}
-                                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                        />
+                                                                    <div className="flex gap-2 items-center flex-1">
+                                                                        <div className="flex items-center bg-white border border-gray-300 rounded-lg px-2 py-1 gap-1 flex-1">
+                                                                            <select
+                                                                                value={getTimeParts(newTaskDueTime).hour12}
+                                                                                onChange={e => setNewTaskDueTime(joinTimeParts(parseInt(e.target.value), getTimeParts(newTaskDueTime).minutes, getTimeParts(newTaskDueTime).ampm))}
+                                                                                className="bg-transparent border-none p-1 text-sm focus:ring-0 outline-none w-14"
+                                                                            >
+                                                                                {[...Array(12)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+                                                                            </select>
+                                                                            <span className="text-gray-400">:</span>
+                                                                            <select
+                                                                                value={getTimeParts(newTaskDueTime).minutes}
+                                                                                onChange={e => setNewTaskDueTime(joinTimeParts(getTimeParts(newTaskDueTime).hour12, e.target.value, getTimeParts(newTaskDueTime).ampm))}
+                                                                                className="bg-transparent border-none p-1 text-sm focus:ring-0 outline-none w-14"
+                                                                            >
+                                                                                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                                                                                    <option key={m} value={m}>{m}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <select
+                                                                                value={getTimeParts(newTaskDueTime).ampm}
+                                                                                onChange={e => setNewTaskDueTime(joinTimeParts(getTimeParts(newTaskDueTime).hour12, getTimeParts(newTaskDueTime).minutes, e.target.value))}
+                                                                                className="bg-transparent border-none p-1 text-sm font-bold text-brand-blue focus:ring-0 outline-none"
+                                                                            >
+                                                                                <option value="AM">AM</option>
+                                                                                <option value="PM">PM</option>
+                                                                            </select>
+                                                                            <Clock size={16} className="text-gray-400 ml-auto" />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
