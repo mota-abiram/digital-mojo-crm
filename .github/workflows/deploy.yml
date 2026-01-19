@@ -34,5 +34,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           local-dir: dist/
-          server-dir: public_html/
+          server-dir: public_html/crm/
           dangerous-clean-slate: true
