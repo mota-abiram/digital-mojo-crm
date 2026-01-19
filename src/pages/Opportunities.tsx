@@ -1514,9 +1514,19 @@ const Opportunities: React.FC = () => {
                                                                                 <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-brand-blue" />
                                                                                 <div className="flex flex-col">
                                                                                     <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
-                                                                                    {task.dueDate && (
-                                                                                        <span className="text-xs text-gray-500">Due: {task.dueDate} {task.dueTime}</span>
+                                                                                    {task.description && (
+                                                                                        <span className="text-xs text-gray-500 line-clamp-1 max-w-[200px] mt-0.5">{task.description}</span>
                                                                                     )}
+                                                                                    <div className="flex gap-2 items-center mt-1">
+                                                                                        {task.dueDate && (
+                                                                                            <span className="text-[10px] text-gray-400">Due: {task.dueDate} {task.dueTime}</span>
+                                                                                        )}
+                                                                                        {task.assignee && (
+                                                                                            <span className="text-[10px] text-blue-500 font-medium bg-blue-50 px-1 rounded">
+                                                                                                {task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                             <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">

@@ -148,6 +148,11 @@ const Tasks: React.FC = () => {
                                         </h3>
                                         {getDueDateLabel(task.dueDate)}
                                     </div>
+                                    {task.description && (
+                                        <p className={`text-sm text-gray-600 mb-3 line-clamp-2 ${task.isCompleted ? 'line-through opacity-50' : ''}`}>
+                                            {task.description}
+                                        </p>
+                                    )}
                                     <div className="flex items-center gap-4 text-xs text-gray-500">
                                         <span className="flex items-center gap-1">
                                             <ArrowRight size={12} />
