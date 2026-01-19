@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
-import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown, Calendar } from 'lucide-react';
+import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown, Calendar, Edit2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Modal } from '../components/Modal';
@@ -226,6 +226,7 @@ const Opportunities: React.FC = () => {
     const [newTaskIsRecurring, setNewTaskIsRecurring] = useState(false);
     const [newNoteContent, setNewNoteContent] = useState('');
     const [isAddingTask, setIsAddingTask] = useState(false);
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [isAddingNote, setIsAddingNote] = useState(false);
 
     const TEAM_MEMBERS = [
@@ -580,20 +581,47 @@ const Opportunities: React.FC = () => {
         }
     };
 
+    const formatTimeToAMPM = (timeStr: string) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        let h = parseInt(hours);
+        const m = minutes;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12; // the hour '0' should be '12'
+        return `${h}:${m} ${ampm}`;
+    };
+
     // Task & Note Handlers
     const handleAddTask = () => {
         if (!newTaskTitle.trim()) return;
-        const newTask: Task = {
-            id: Date.now().toString(),
-            title: newTaskTitle,
-            description: newTaskDescription,
-            dueDate: newTaskDueDate,
-            dueTime: newTaskDueTime,
-            isRecurring: newTaskIsRecurring,
-            assignee: newTaskAssignee,
-            isCompleted: false
-        };
-        setTasks([...tasks, newTask]);
+
+        if (editingTaskId) {
+            const updatedTasks = tasks.map(t => t.id === editingTaskId ? {
+                ...t,
+                title: newTaskTitle,
+                description: newTaskDescription,
+                dueDate: newTaskDueDate,
+                dueTime: newTaskDueTime,
+                isRecurring: newTaskIsRecurring,
+                assignee: newTaskAssignee
+            } : t);
+            setTasks(updatedTasks);
+            setEditingTaskId(null);
+        } else {
+            const newTask: Task = {
+                id: Date.now().toString(),
+                title: newTaskTitle,
+                description: newTaskDescription,
+                dueDate: newTaskDueDate,
+                dueTime: newTaskDueTime,
+                isRecurring: newTaskIsRecurring,
+                assignee: newTaskAssignee,
+                isCompleted: false
+            };
+            setTasks([...tasks, newTask]);
+        }
+
         setNewTaskTitle('');
         setNewTaskDescription('');
         setNewTaskDueDate(format(new Date(), 'yyyy-MM-dd'));
@@ -601,6 +629,17 @@ const Opportunities: React.FC = () => {
         setNewTaskAssignee('');
         setNewTaskIsRecurring(false);
         setIsAddingTask(false);
+    };
+
+    const handleStartEditTask = (task: Task) => {
+        setNewTaskTitle(task.title);
+        setNewTaskDescription(task.description || '');
+        setNewTaskDueDate(task.dueDate || format(new Date(), 'yyyy-MM-dd'));
+        setNewTaskDueTime(task.dueTime || '08:00');
+        setNewTaskAssignee(task.assignee || '');
+        setNewTaskIsRecurring(task.isRecurring || false);
+        setEditingTaskId(task.id);
+        setIsAddingTask(true);
     };
 
     const handleDeleteTask = (taskId: string) => {
@@ -1519,19 +1558,24 @@ const Opportunities: React.FC = () => {
                                                                                     )}
                                                                                     <div className="flex gap-2 items-center mt-1">
                                                                                         {task.dueDate && (
-                                                                                            <span className="text-[10px] text-gray-400">Due: {task.dueDate} {task.dueTime}</span>
+                                                                                            <span className="text-[10px] text-gray-400">Due: {task.dueDate} {formatTimeToAMPM(task.dueTime || '')}</span>
                                                                                         )}
                                                                                         {task.assignee && (
                                                                                             <span className="text-[10px] text-blue-500 font-medium bg-blue-50 px-1 rounded">
-                                                                                                {task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
+                                                                                                {task.assignee === currentUser?.email || task.assignee === currentUser?.id ? 'Me' : task.assignee.split('@')[0]}
                                                                                             </span>
                                                                                         )}
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">
-                                                                                <Trash2 size={16} />
-                                                                            </button>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <button onClick={() => handleStartEditTask(task)} className="text-gray-400 hover:text-brand-blue">
+                                                                                    <Edit2 size={16} />
+                                                                                </button>
+                                                                                <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">
+                                                                                    <Trash2 size={16} />
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -1541,10 +1585,15 @@ const Opportunities: React.FC = () => {
                                                 ) : (
                                                     <div className="animate-in fade-in slide-in-from-right-4 h-full flex flex-col">
                                                         <div className="flex items-center gap-2 mb-6">
-                                                            <button onClick={() => setIsAddingTask(false)} className="text-gray-500 hover:text-gray-700">
+                                                            <button onClick={() => {
+                                                                setIsAddingTask(false);
+                                                                setEditingTaskId(null);
+                                                                setNewTaskTitle('');
+                                                                setNewTaskDescription('');
+                                                            }} className="text-gray-500 hover:text-gray-700">
                                                                 <ChevronDown className="rotate-90" size={20} />
                                                             </button>
-                                                            <h3 className="text-lg font-bold text-gray-900">Add Task</h3>
+                                                            <h3 className="text-lg font-bold text-gray-900">{editingTaskId ? 'Edit Task' : 'Add Task'}</h3>
                                                         </div>
 
                                                         <div className="space-y-6 flex-1 overflow-y-auto pr-2">
@@ -1645,7 +1694,12 @@ const Opportunities: React.FC = () => {
 
                                                         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                                                             <button
-                                                                onClick={() => setIsAddingTask(false)}
+                                                                onClick={() => {
+                                                                    setIsAddingTask(false);
+                                                                    setEditingTaskId(null);
+                                                                    setNewTaskTitle('');
+                                                                    setNewTaskDescription('');
+                                                                }}
                                                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                                                             >
                                                                 Cancel
@@ -1654,7 +1708,7 @@ const Opportunities: React.FC = () => {
                                                                 onClick={handleAddTask}
                                                                 className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90"
                                                             >
-                                                                Save
+                                                                {editingTaskId ? 'Update Task' : 'Save'}
                                                             </button>
                                                         </div>
                                                     </div>
