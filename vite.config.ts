@@ -6,9 +6,15 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    base: '/', // 🔴 REQUIRED for Hostinger / Apache
+    // ✅ MUST match subfolder deployment
+    base: '/crm/',
 
     plugins: [react()],
+
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true
+    },
 
     server: {
       port: 3000,
