@@ -268,9 +268,15 @@ const Tasks: React.FC = () => {
                                                         )
                                                     ) : (
                                                         <>
-                                                            • Assigned to: {task.assignee.split('@')[0]}
-                                                            {task.assignedBy && (
-                                                                <span className="text-[10px] opacity-70"> by {task.assignedBy.split('@')[0]}</span>
+                                                            {task.assignee === (task.assignedBy || task.assignee) ? (
+                                                                `• Self Assigned by ${task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}`
+                                                            ) : (
+                                                                <>
+                                                                    • Assigned to: {task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}
+                                                                    {task.assignedBy && (
+                                                                        <span className="text-[10px] opacity-70"> by {task.assignedBy.includes('@') ? task.assignedBy.split('@')[0] : task.assignedBy}</span>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </>
                                                     )}
@@ -362,9 +368,17 @@ const Tasks: React.FC = () => {
                                                 )
                                             ) : (
                                                 <>
-                                                    Assigned to <span className="font-medium">{selectedTask.assignee.split('@')[0]}</span>
-                                                    {selectedTask.assignedBy && (
-                                                        <> by <span className="font-medium">{selectedTask.assignedBy.split('@')[0]}</span></>
+                                                    {selectedTask.assignee === (selectedTask.assignedBy || selectedTask.assignee) ? (
+                                                        <>
+                                                            Self Assigned by <span className="font-medium">{selectedTask.assignee.includes('@') ? selectedTask.assignee.split('@')[0] : selectedTask.assignee}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Assigned to <span className="font-medium">{selectedTask.assignee.includes('@') ? selectedTask.assignee.split('@')[0] : selectedTask.assignee}</span>
+                                                            {selectedTask.assignedBy && (
+                                                                <> by <span className="font-medium">{selectedTask.assignedBy.includes('@') ? selectedTask.assignedBy.split('@')[0] : selectedTask.assignedBy}</span></>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </>
                                             )}

@@ -1664,9 +1664,15 @@ const Opportunities: React.FC = () => {
                                                                                                         )
                                                                                                     ) : (
                                                                                                         <>
-                                                                                                            Assigned to: {task.assignee.split('@')[0]}
-                                                                                                            {task.assignedBy && (
-                                                                                                                <span className="text-[9px] opacity-70"> by {task.assignedBy.split('@')[0]}</span>
+                                                                                                            {task.assignee === (task.assignedBy || task.assignee) ? (
+                                                                                                                `Self Assigned by ${task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}`
+                                                                                                            ) : (
+                                                                                                                <>
+                                                                                                                    Assigned to: {task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}
+                                                                                                                    {task.assignedBy && (
+                                                                                                                        <span className="text-[9px] opacity-70"> by {task.assignedBy.includes('@') ? task.assignedBy.split('@')[0] : task.assignedBy}</span>
+                                                                                                                    )}
+                                                                                                                </>
                                                                                                             )}
                                                                                                         </>
                                                                                                     )}
