@@ -26,8 +26,19 @@ jobs:
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env.production
           npm run build
 
+      # - name: Deploy to Hostinger
+      #   uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      #   with:
+      #     server: ${{ secrets.FTP_SERVER }}
+      #     username: ${{ secrets.FTP_USERNAME }}
+      #     password: ${{ secrets.FTP_PASSWORD }}
+      #     port: 21
+      #     local-dir: dist/
+      #     server-dir: public_html/crm/
+      #     dangerous-clean-slate: true
+
       - name: Deploy to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -36,3 +47,4 @@ jobs:
           local-dir: dist/
           server-dir: public_html/crm/
           dangerous-clean-slate: true
+
