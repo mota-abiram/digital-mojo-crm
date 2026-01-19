@@ -63,7 +63,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboardd</h1>
         <div className="flex gap-2">
           <select
             value={timeRange}
