@@ -5,6 +5,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import toast from 'react-hot-toast';
+import { resetAllTasks } from '../lib/admin';
 
 interface SortableStageItemProps {
     stage: any;
@@ -57,6 +58,7 @@ const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState('pipelines');
     const [isCleaningContacts, setIsCleaningContacts] = useState(false);
     const [isCleaningOpportunities, setIsCleaningOpportunities] = useState(false);
+    const [isResettingTasks, setIsResettingTasks] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -288,6 +290,51 @@ const Settings: React.FC = () => {
                                                 <>
                                                     <Trash2 size={16} />
                                                     Clean Opportunities
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Reset All Tasks */}
+                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="font-medium text-gray-900">Reset All Tasks</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Removes all tasks from all opportunities. This will make your task list completely clean and fresh.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                if (!window.confirm('⚠️ Are you sure you want to reset ALL tasks? This will permanently delete all tasks from all opportunities. This action cannot be undone!')) {
+                                                    return;
+                                                }
+                                                setIsResettingTasks(true);
+                                                try {
+                                                    const result = await resetAllTasks();
+                                                    if (result.success) {
+                                                        toast.success(result.message);
+                                                    } else {
+                                                        toast.error(result.message);
+                                                    }
+                                                } catch (error) {
+                                                    toast.error('Failed to reset tasks');
+                                                }
+                                                setIsResettingTasks(false);
+                                            }}
+                                            disabled={isResettingTasks}
+                                            className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        >
+                                            {isResettingTasks ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Resetting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 size={16} />
+                                                    Reset All Tasks
                                                 </>
                                             )}
                                         </button>

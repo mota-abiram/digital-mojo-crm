@@ -1,5 +1,6 @@
 import { db } from './firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { resetAllTasks } from '../utils/resetTasks';
 
 export const ADMIN_CONFIG = {
     // List of allowed emails that can log in to the system
@@ -59,3 +60,7 @@ export const isRegistrationLimitReached = async (): Promise<boolean> => {
         return false;
     }
 };
+
+// Export the reset tasks utility
+export { resetAllTasks };
+
