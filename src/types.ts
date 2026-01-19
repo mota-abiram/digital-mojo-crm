@@ -28,6 +28,8 @@ export interface Task {
   dueTime?: string;
   isRecurring?: boolean;
   assignee?: string;
+  assignedBy?: string; // Email or ID of the user who assigned this task
+  createdBy?: string; // Email or ID of the user who created this task (for permissions)
 }
 
 export interface Note {

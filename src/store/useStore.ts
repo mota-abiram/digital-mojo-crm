@@ -439,6 +439,65 @@ export const useStore = create<AppState>((set, get) => ({
         get().fetchStageCounts();
     },
     updateOpportunity: async (id, opp) => {
+        // Enforce Task Permissions
+        if (opp.tasks) {
+            const currentUser = get().currentUser;
+            const existingOpp = get().opportunities.find(o => o.id === id);
+
+            if (existingOpp && existingOpp.tasks && currentUser) {
+                // 1. Check for Deleted Tasks
+                const newIds = new Set(opp.tasks.map(t => t.id));
+                const deletedTasks = existingOpp.tasks.filter(t => !newIds.has(t.id));
+
+                for (const task of deletedTasks) {
+                    // Only creator can delete
+                    // If task has no createdBy (legacy), allow deletion
+                    if (task.createdBy && task.createdBy !== currentUser.id && task.createdBy !== currentUser.email) {
+                        const errorMsg = `Permission denied: You cannot delete task "${task.title}" because you did not create it.`;
+                        console.error(errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                }
+
+                // 2. Check for Edited Tasks
+                for (const newTask of opp.tasks) {
+                    const oldTask = existingOpp.tasks.find(t => t.id === newTask.id);
+                    if (oldTask) {
+                        // Task exists, check if it was modified
+                        const isModified = JSON.stringify(newTask) !== JSON.stringify(oldTask);
+
+                        if (isModified) {
+                            const isCreator = !oldTask.createdBy || oldTask.createdBy === currentUser.id || oldTask.createdBy === currentUser.email;
+                            const isAssignee = oldTask.assignee === currentUser.id || oldTask.assignee === currentUser.email;
+
+                            // Check if only completion status changed
+                            const onlyCompletionChanged =
+                                newTask.isCompleted !== oldTask.isCompleted &&
+                                newTask.title === oldTask.title &&
+                                newTask.description === oldTask.description &&
+                                newTask.dueDate === oldTask.dueDate &&
+                                newTask.dueTime === oldTask.dueTime &&
+                                newTask.assignee === oldTask.assignee;
+
+                            if (!isCreator) {
+                                if (onlyCompletionChanged) {
+                                    if (!isAssignee) {
+                                        const errorMsg = `Permission denied: You cannot complete task "${newTask.title}" because it is not assigned to you.`;
+                                        console.error(errorMsg);
+                                        throw new Error(errorMsg);
+                                    }
+                                } else {
+                                    const errorMsg = `Permission denied: You cannot edit task "${newTask.title}" because you did not create it.`;
+                                    console.error(errorMsg);
+                                    throw new Error(errorMsg);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         await api.opportunities.update(id, opp);
         set((state) => ({
             opportunities: state.opportunities.map((o) => (o.id === id ? { ...o, ...opp } : o)),

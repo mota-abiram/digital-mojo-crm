@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { CheckSquare, Search, Filter, Calendar, Clock, ArrowRight, Phone, X } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isTomorrow } from 'date-fns';
 import { Task } from '../types';
+import { canEditTask, canDeleteTask, canToggleTaskCompletion } from '../utils/taskPermissions';
 
 const Tasks: React.FC = () => {
     const { opportunities, updateOpportunity, currentUser, isLoading } = useStore();
@@ -205,70 +206,93 @@ const Tasks: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid gap-4 max-w-5xl mx-auto">
-                        {filteredTasks.map(task => (
-                            <div
-                                key={task.id}
-                                className={`group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 cursor-pointer ${task.isCompleted ? 'opacity-75 bg-gray-50' : ''
-                                    }`}
-                                onClick={() => setSelectedTask(task)}
-                            >
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleToggleTask(task);
-                                    }}
-                                    className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${task.isCompleted
-                                        ? 'bg-primary border-primary text-black'
-                                        : 'border-gray-300 hover:border-primary text-transparent'
-                                        }`}
-                                >
-                                    <CheckSquare size={14} fill="currentColor" />
-                                </button>
+                        {filteredTasks.map(task => {
+                            const canComplete = canToggleTaskCompletion(task, currentUser?.id, currentUser?.email);
 
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h3 className={`font-medium text-gray-900 truncate ${task.isCompleted ? 'line-through text-gray-500' : ''}`}>
-                                            {task.title}
-                                        </h3>
-                                        {getDueDateLabel(task.dueDate)}
-                                    </div>
-                                    {task.description && (
-                                        <p className={`text-sm text-gray-600 mb-3 line-clamp-2 ${task.isCompleted ? 'line-through opacity-50' : ''}`}>
-                                            {task.description}
-                                        </p>
+                            return (
+                                <div
+                                    key={task.id}
+                                    className={`group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 cursor-pointer ${task.isCompleted ? 'opacity-75 bg-gray-50' : ''
+                                        }`}
+                                    onClick={() => setSelectedTask(task)}
+                                >
+                                    {canComplete ? (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleTask(task);
+                                            }}
+                                            className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${task.isCompleted
+                                                ? 'bg-primary border-primary text-black'
+                                                : 'border-gray-300 hover:border-primary text-transparent'
+                                                }`}
+                                        >
+                                            <CheckSquare size={14} fill="currentColor" />
+                                        </button>
+                                    ) : (
+                                        <div className="flex-shrink-0 w-6 h-6 rounded border-2 border-gray-200 bg-gray-50 flex items-center justify-center opacity-50 cursor-not-allowed" title="Only assigned user can complete this task">
+                                            {task.isCompleted && <CheckSquare size={14} fill="currentColor" className="text-gray-400" />}
+                                        </div>
                                     )}
-                                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                                        <span className="flex items-center gap-1">
-                                            <ArrowRight size={12} />
-                                            {task.opportunityName}
-                                        </span>
-                                        {task.opportunityPhone && (
-                                            <span className="flex items-center gap-1 text-green-600 font-medium">
-                                                <Phone size={10} />
-                                                {task.opportunityPhone}
-                                            </span>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <h3 className={`font-medium text-gray-900 truncate ${task.isCompleted ? 'line-through text-gray-500' : ''}`}>
+                                                {task.title}
+                                            </h3>
+                                            {getDueDateLabel(task.dueDate)}
+                                        </div>
+                                        {task.description && (
+                                            <p className={`text-sm text-gray-600 mb-3 line-clamp-2 ${task.isCompleted ? 'line-through opacity-50' : ''}`}>
+                                                {task.description}
+                                            </p>
                                         )}
-                                        {task.assignee && (
-                                            <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'text-blue-600 bg-blue-50 font-bold' : 'text-gray-500 bg-gray-100 font-medium'}`}>
-                                                • Assigned: {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'Me' : task.assignee.split('@')[0]}
-                                            </span>
-                                        )}
-                                        {task.dueDate && (
+                                        <div className="flex items-center gap-4 text-xs text-gray-500">
                                             <span className="flex items-center gap-1">
-                                                <Calendar size={12} />
-                                                {task.dueDate}
+                                                <ArrowRight size={12} />
+                                                {task.opportunityName}
                                             </span>
-                                        )}
-                                        {task.dueTime && (
-                                            <span className="flex items-center gap-1">
-                                                <Clock size={12} />
-                                                {formatTimeToAMPM(task.dueTime)}
-                                            </span>
-                                        )}
+                                            {task.opportunityPhone && (
+                                                <span className="flex items-center gap-1 text-green-600 font-medium">
+                                                    <Phone size={10} />
+                                                    {task.opportunityPhone}
+                                                </span>
+                                            )}
+                                            {task.assignee && (
+                                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'text-blue-600 bg-blue-50 font-bold' : 'text-gray-500 bg-gray-100 font-medium'}`}>
+                                                    {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? (
+                                                        task.assignedBy === currentUser?.email || task.assignedBy === currentUser?.id ? (
+                                                            '• Self Assigned'
+                                                        ) : (
+                                                            `• Assigned by ${task.assignedBy?.split('@')[0] || 'Unknown'}`
+                                                        )
+                                                    ) : (
+                                                        <>
+                                                            • Assigned to: {task.assignee.split('@')[0]}
+                                                            {task.assignedBy && (
+                                                                <span className="text-[10px] opacity-70"> by {task.assignedBy.split('@')[0]}</span>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </span>
+                                            )}
+                                            {task.dueDate && (
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar size={12} />
+                                                    {task.dueDate}
+                                                </span>
+                                            )}
+                                            {task.dueTime && (
+                                                <span className="flex items-center gap-1">
+                                                    <Clock size={12} />
+                                                    {formatTimeToAMPM(task.dueTime)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -321,6 +345,32 @@ const Tasks: React.FC = () => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Assignment Information */}
+                                {selectedTask.assignee && (
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                        <h3 className="text-sm font-semibold text-blue-900 mb-1">Assignment</h3>
+                                        <p className="text-sm text-blue-700">
+                                            {selectedTask.assignee === currentUser?.id || selectedTask.assignee === currentUser?.email ? (
+                                                selectedTask.assignedBy === currentUser?.email || selectedTask.assignedBy === currentUser?.id ? (
+                                                    <span className="font-medium">Self Assigned</span>
+                                                ) : (
+                                                    <>
+                                                        Assigned to <span className="font-medium">You</span> by{' '}
+                                                        <span className="font-medium">{selectedTask.assignedBy?.split('@')[0] || 'Unknown'}</span>
+                                                    </>
+                                                )
+                                            ) : (
+                                                <>
+                                                    Assigned to <span className="font-medium">{selectedTask.assignee.split('@')[0]}</span>
+                                                    {selectedTask.assignedBy && (
+                                                        <> by <span className="font-medium">{selectedTask.assignedBy.split('@')[0]}</span></>
+                                                    )}
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="flex items-center gap-6 pt-4 border-t border-gray-100 text-sm text-gray-600">
                                     {selectedTask.dueDate && (

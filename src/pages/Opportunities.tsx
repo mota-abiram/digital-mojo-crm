@@ -7,6 +7,7 @@ import { Modal } from '../components/Modal';
 import { Opportunity, Task, Note } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { canEditTask, canDeleteTask, canToggleTaskCompletion } from '../utils/taskPermissions';
 
 interface DraggableCardProps {
     item: Opportunity;
@@ -645,7 +646,9 @@ const Opportunities: React.FC = () => {
                 dueDate: newTaskDueDate,
                 dueTime: newTaskDueTime,
                 isRecurring: newTaskIsRecurring,
-                assignee: newTaskAssignee
+                assignee: newTaskAssignee,
+                assignedBy: currentUser?.email || currentUser?.id, // Track who assigned/updated the task
+                // createdBy is preserved from original task (not updated)
             } : t);
             setTasks(updatedTasks);
             setEditingTaskId(null);
@@ -658,6 +661,8 @@ const Opportunities: React.FC = () => {
                 dueTime: newTaskDueTime,
                 isRecurring: newTaskIsRecurring,
                 assignee: newTaskAssignee,
+                assignedBy: currentUser?.email || currentUser?.id, // Track who created the task
+                createdBy: currentUser?.email || currentUser?.id, // Track task creator for permissions
                 isCompleted: false
             };
             setTasks([...tasks, newTask]);
@@ -1627,42 +1632,77 @@ const Opportunities: React.FC = () => {
                                                                 </div>
                                                             ) : (
                                                                 <div className="space-y-3">
-                                                                    {tasks.map(task => (
-                                                                        <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-brand-blue" />
-                                                                                <div className="flex flex-col">
-                                                                                    <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
-                                                                                    {task.description && (
-                                                                                        <span className="text-xs text-gray-500 line-clamp-1 max-w-[200px] mt-0.5">{task.description}</span>
+                                                                    {tasks.map(task => {
+                                                                        const canComplete = canToggleTaskCompletion(task, currentUser?.id, currentUser?.email);
+                                                                        const canEdit = canEditTask(task, currentUser?.id, currentUser?.email);
+                                                                        const canDelete = canDeleteTask(task, currentUser?.id, currentUser?.email);
+
+                                                                        return (
+                                                                            <div key={task.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    {canComplete ? (
+                                                                                        <input type="checkbox" checked={task.isCompleted} readOnly className="h-4 w-4 text-brand-blue rounded border-gray-300 focus:ring-brand-blue cursor-pointer" />
+                                                                                    ) : (
+                                                                                        <div className="h-4 w-4 rounded border-2 border-gray-300 bg-gray-50 opacity-50" title="Only assigned user can complete this task"></div>
                                                                                     )}
-                                                                                    <div className="flex gap-2 items-center mt-1">
-                                                                                        {task.dueDate && (
-                                                                                            <span className="text-[10px] text-gray-400">Due: {task.dueDate} {formatTimeToAMPM(task.dueTime || '')}</span>
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className={`text-sm font-medium ${task.isCompleted ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</span>
+                                                                                        {task.description && (
+                                                                                            <span className="text-xs text-gray-500 line-clamp-1 max-w-[200px] mt-0.5">{task.description}</span>
                                                                                         )}
-                                                                                        {task.assignee && (
-                                                                                            <span className="text-[10px] text-blue-500 font-medium bg-blue-50 px-1 rounded">
-                                                                                                {task.assignee === currentUser?.email || task.assignee === currentUser?.id ? 'Me' : task.assignee.split('@')[0]}
-                                                                                            </span>
-                                                                                        )}
-                                                                                        {formData.contactPhone && (
-                                                                                            <span className="text-[10px] text-green-600 font-medium bg-green-50 px-1 rounded flex items-center gap-0.5">
-                                                                                                <Phone size={8} /> {formData.contactPhone}
-                                                                                            </span>
-                                                                                        )}
+                                                                                        <div className="flex gap-2 items-center mt-1">
+                                                                                            {task.dueDate && (
+                                                                                                <span className="text-[10px] text-gray-400">Due: {task.dueDate} {formatTimeToAMPM(task.dueTime || '')}</span>
+                                                                                            )}
+                                                                                            {task.assignee && (
+                                                                                                <span className="text-[10px] text-blue-500 font-medium bg-blue-50 px-1 rounded">
+                                                                                                    {task.assignee === currentUser?.email || task.assignee === currentUser?.id ? (
+                                                                                                        task.assignedBy === currentUser?.email || task.assignedBy === currentUser?.id ? (
+                                                                                                            'Self Assigned'
+                                                                                                        ) : (
+                                                                                                            `Assigned by ${task.assignedBy?.split('@')[0] || 'Unknown'}`
+                                                                                                        )
+                                                                                                    ) : (
+                                                                                                        <>
+                                                                                                            Assigned to: {task.assignee.split('@')[0]}
+                                                                                                            {task.assignedBy && (
+                                                                                                                <span className="text-[9px] opacity-70"> by {task.assignedBy.split('@')[0]}</span>
+                                                                                                            )}
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {formData.contactPhone && (
+                                                                                                <span className="text-[10px] text-green-600 font-medium bg-green-50 px-1 rounded flex items-center gap-0.5">
+                                                                                                    <Phone size={8} /> {formData.contactPhone}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    {canEdit ? (
+                                                                                        <button onClick={() => handleStartEditTask(task)} className="text-gray-400 hover:text-brand-blue" title="Edit task">
+                                                                                            <Edit2 size={16} />
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <div className="p-1 text-gray-200 cursor-not-allowed" title="Only task creator can edit">
+                                                                                            <Edit2 size={16} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {canDelete ? (
+                                                                                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600" title="Delete task">
+                                                                                            <Trash2 size={16} />
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <div className="p-1 text-gray-200 cursor-not-allowed" title="Only task creator can delete">
+                                                                                            <Trash2 size={16} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <button onClick={() => handleStartEditTask(task)} className="text-gray-400 hover:text-brand-blue">
-                                                                                    <Edit2 size={16} />
-                                                                                </button>
-                                                                                <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-600">
-                                                                                    <Trash2 size={16} />
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             )}
                                                         </div>
