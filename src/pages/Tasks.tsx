@@ -43,9 +43,9 @@ const Tasks: React.FC = () => {
     const filteredTasks = useMemo(() => {
         return allTasks.filter(task => {
             const matchesSearch =
-                task.title.toLowerCase().includes(search.toLowerCase()) ||
+                (task.title || '').toLowerCase().includes(search.toLowerCase()) ||
                 (task.description || '').toLowerCase().includes(search.toLowerCase()) ||
-                task.opportunityName.toLowerCase().includes(search.toLowerCase());
+                (task.opportunityName || '').toLowerCase().includes(search.toLowerCase());
 
             const matchesFilter =
                 filter === 'all' ? true :

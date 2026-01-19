@@ -1138,7 +1138,7 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Contact</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
-                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Follow up</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Next Follow up Date</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
@@ -1178,7 +1178,7 @@ const Opportunities: React.FC = () => {
                                                     const latestNoteContent = latestNoteObj ? latestNoteObj.content : '-';
                                                     return (
                                                         <>
-                                                            <div className="truncate max-w-[400px]">{latestNoteContent}</div>
+                                                            <div className="truncate max-w-[200px]">{latestNoteContent}</div>
                                                             {latestNoteObj && (
                                                                 <div className="absolute z-50 invisible group-hover/note:visible bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs -top-2 left-3/4 ml-2 w-72 break-words pointer-events-none">
                                                                     <div className="font-bold mb-1 text-blue-400">
