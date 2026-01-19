@@ -1,14 +1,25 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { CheckSquare, Search, Filter, Calendar, Clock, ArrowRight, Phone } from 'lucide-react';
+import { CheckSquare, Search, Filter, Calendar, Clock, ArrowRight, Phone, X } from 'lucide-react';
 import { format, parseISO, isPast, isToday, isTomorrow } from 'date-fns';
 import { Task } from '../types';
 
 const Tasks: React.FC = () => {
-    const { opportunities, updateOpportunity, currentUser } = useStore();
+    const { opportunities, updateOpportunity, currentUser, isLoading } = useStore();
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [viewScope, setViewScope] = useState<'my' | 'all'>('my');
     const [search, setSearch] = useState('');
+    const [selectedTask, setSelectedTask] = useState<(Task & { opportunityName: string; opportunityId: string; opportunityPhone?: string }) | null>(null);
+
+    // ... (rest of memoization code)
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+            </div>
+        );
+    }
 
     // Flatten tasks from all opportunities
     const allTasks = useMemo(() => {
@@ -151,11 +162,15 @@ const Tasks: React.FC = () => {
                         {filteredTasks.map(task => (
                             <div
                                 key={task.id}
-                                className={`group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 ${task.isCompleted ? 'opacity-75 bg-gray-50' : ''
+                                className={`group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 cursor-pointer ${task.isCompleted ? 'opacity-75 bg-gray-50' : ''
                                     }`}
+                                onClick={() => setSelectedTask(task)}
                             >
                                 <button
-                                    onClick={() => handleToggleTask(task)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleTask(task);
+                                    }}
                                     className={`flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${task.isCompleted
                                         ? 'bg-primary border-primary text-black'
                                         : 'border-gray-300 hover:border-primary text-transparent'
@@ -211,6 +226,83 @@ const Tasks: React.FC = () => {
                     </div>
                 )}
             </div>
+            {/* Task Details Modal */}
+            {selectedTask && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <h2 className="text-xl font-bold text-gray-900 pr-8 break-words">{selectedTask.title}</h2>
+                                <button
+                                    onClick={() => setSelectedTask(null)}
+                                    className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h3>
+                                    {selectedTask.description ? (
+                                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            {selectedTask.description}
+                                        </p>
+                                    ) : (
+                                        <p className="text-gray-400 italic">No description provided.</p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Opportunity</h3>
+                                        <div className="font-medium text-gray-900 flex items-center gap-1.5">
+                                            {selectedTask.opportunityName}
+                                            <ArrowRight size={14} className="text-gray-400" />
+                                        </div>
+                                    </div>
+
+                                    {selectedTask.opportunityPhone && (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Contact Phone</h3>
+                                            <a
+                                                href={`tel:${selectedTask.opportunityPhone}`}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-medium hover:bg-green-100 transition-colors"
+                                            >
+                                                <Phone size={14} />
+                                                {selectedTask.opportunityPhone}
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-6 pt-4 border-t border-gray-100 text-sm text-gray-600">
+                                    {selectedTask.dueDate && (
+                                        <div className="flex items-center gap-2">
+                                            <Calendar size={16} className="text-brand-blue" />
+                                            <span>{selectedTask.dueDate}</span>
+                                        </div>
+                                    )}
+                                    {selectedTask.dueTime && (
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={16} className="text-brand-blue" />
+                                            <span>{formatTimeToAMPM(selectedTask.dueTime)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end">
+                            <button
+                                onClick={() => setSelectedTask(null)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
