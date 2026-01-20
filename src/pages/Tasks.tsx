@@ -6,14 +6,22 @@ import { Task } from '../types';
 import { canEditTask, canDeleteTask, canToggleTaskCompletion } from '../utils/taskPermissions';
 
 const Tasks: React.FC = () => {
-    const { opportunities, updateOpportunity, currentUser, isLoading } = useStore();
+    const { opportunities, updateOpportunity, currentUser, isLoading, isLoadingAuth, stages, fetchOpportunitiesByStage } = useStore();
     const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [viewScope, setViewScope] = useState<'my' | 'all'>('my');
     const [search, setSearch] = useState('');
     const [selectedTask, setSelectedTask] = useState<(Task & { opportunityName: string; opportunityId: string; opportunityPhone?: string }) | null>(null);
 
-    // ... (rest of memoization code)
+    // Initial Data Fetch to ensure we have tasks from all stages (similar to Board View)
+    React.useEffect(() => {
+        // We fetch opportunities for each stage to ensure the Tasks list is populated 
+        // with more than just the default 20 recent items.
+        stages.forEach(stage => {
+            fetchOpportunitiesByStage(stage.id);
+        });
+    }, [stages, fetchOpportunitiesByStage]);
 
+    // ... (rest of memoization code)
 
 
     // Flatten tasks from all opportunities
@@ -85,9 +93,11 @@ const Tasks: React.FC = () => {
             filteredTasks: filteredTasks.length,
             viewScope,
             filter,
-            searchActive: !!search
+            searchActive: !!search,
+            isLoading,
+            isLoadingAuth
         });
-    }, [allTasks, filteredTasks, viewScope, filter, search, currentUser, opportunities, allTasksCount, myTasksCount]);
+    }, [allTasks, filteredTasks, viewScope, filter, search, currentUser, opportunities, allTasksCount, myTasksCount, isLoading, isLoadingAuth]);
 
     const handleToggleTask = (task: Task & { opportunityId: string }) => {
         const opp = opportunities.find(o => o.id === task.opportunityId);
@@ -120,10 +130,13 @@ const Tasks: React.FC = () => {
         return <span className="text-gray-500">{format(date, 'MMM d')}</span>;
     };
 
-    if (isLoading) {
+    if (isLoading || isLoadingAuth) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+                    <p className="text-gray-500 text-sm">{isLoadingAuth ? 'Initializing...' : 'Loading tasks...'}</p>
+                </div>
             </div>
         );
     }

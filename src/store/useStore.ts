@@ -407,24 +407,48 @@ export const useStore = create<AppState>((set, get) => ({
     fetchOpportunities: async () => {
         set({ isLoading: true });
         const userId = get().currentUser?.id;
-        const { data, lastDoc } = await api.opportunities.getAll(userId, null, 20);
-        set({
-            opportunities: data,
-            lastOpportunityDoc: lastDoc,
-            hasMoreOpportunities: data.length === 20,
-            isLoading: false
-        });
+        try {
+            const { data, lastDoc } = await api.opportunities.getAll(userId, null, 20);
+
+            set((state) => {
+                // Merge new data with existing opportunities to prevent data loss (e.g. from Board View)
+                const existingMap = new Map(state.opportunities.map(o => [o.id, o]));
+
+                // Update or add new items
+                data.forEach(opp => {
+                    existingMap.set(opp.id, opp);
+                });
+
+                // Convert back to array
+                const mergedOpportunities = Array.from(existingMap.values());
+
+                return {
+                    opportunities: mergedOpportunities,
+                    lastOpportunityDoc: lastDoc,
+                    hasMoreOpportunities: data.length === 20,
+                    isLoading: false
+                };
+            });
+        } catch (error) {
+            console.error("Error fetching opportunities:", error);
+            set({ isLoading: false });
+        }
     },
     loadMoreOpportunities: async () => {
         const { lastOpportunityDoc, opportunities, currentUser, hasMoreOpportunities } = get();
         if (!hasMoreOpportunities || !lastOpportunityDoc) return;
 
-        const { data, lastDoc } = await api.opportunities.getAll(currentUser?.id, lastOpportunityDoc, 20);
-        set({
-            opportunities: Array.from(new Map([...opportunities, ...data].map(o => [o.id, o])).values()),
-            lastOpportunityDoc: lastDoc,
-            hasMoreOpportunities: data.length === 20
-        });
+        try {
+            const { data, lastDoc } = await api.opportunities.getAll(currentUser?.id, lastOpportunityDoc, 20);
+            set({
+                // Merge and deduplicate
+                opportunities: Array.from(new Map([...opportunities, ...data].map(o => [o.id, o])).values()),
+                lastOpportunityDoc: lastDoc,
+                hasMoreOpportunities: data.length === 20
+            });
+        } catch (error) {
+            console.error("Error loading more opportunities:", error);
+        }
     },
     addOpportunity: async (opp) => {
         const newOpp = await api.opportunities.create(opp);
