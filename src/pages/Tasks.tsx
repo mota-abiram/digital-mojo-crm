@@ -12,6 +12,83 @@ const Tasks: React.FC = () => {
     const [search, setSearch] = useState('');
     const [selectedTask, setSelectedTask] = useState<(Task & { opportunityName: string; opportunityId: string; opportunityPhone?: string }) | null>(null);
 
+    const TEAM_MEMBERS = [
+        { name: 'Komal', email: 'komal@digitalmojo.in', id: 'OwGcGoDXKdPVAMBNTyrY8nDqpmm2' },
+        { name: 'Dhiraj', email: 'dhiraj@digitalmojo.in', id: '58Ba96qczERiK7DzBbMkpoko7Vx1' },
+        { name: 'Rupal', email: 'rupal@digitalmojo.in', id: 'UNUwlgtVDUc6c9uQVMvBiYjmBYB2' },
+        { name: 'Veda', email: 'veda@digitalmojo.in', id: '6l7loPF90teRjJxy61ABWH5GUvX2' }
+    ];
+
+    const resolveUserName = (identifier?: string) => {
+        if (!identifier) return 'Unknown';
+
+        // 1. Check if it's the current user
+        if (identifier === currentUser?.id || identifier === currentUser?.email) {
+            return currentUser?.name || 'You';
+        }
+
+        // 2. Check Team Members (by email or id)
+        const teamMember = TEAM_MEMBERS.find(m => m.email === identifier || m.id === identifier);
+        if (teamMember) return teamMember.name;
+
+        // 3. Fallback: If it looks like an email, split it
+        if (identifier.includes('@')) return identifier.split('@')[0];
+
+        // 4. Fallback: Just return ID (maybe shortened?) or "User"
+        return identifier;
+    };
+
+    const isSelfAssigned = (task: Task) => {
+        // Check if assignee matches assignedBy
+        if (task.assignee === task.assignedBy) return true;
+
+        const assigneeIsMe = task.assignee === currentUser?.id || task.assignee === currentUser?.email;
+        const assignedByIsMe = task.assignedBy === currentUser?.id || task.assignedBy === currentUser?.email;
+        if (assigneeIsMe && assignedByIsMe) return true;
+
+        return false;
+    };
+
+
+    const renderAssignmentLabel = (task: Task) => {
+        if (!task.assignee) return null;
+
+        const isAssignedToMe = task.assignee === currentUser?.id || task.assignee === currentUser?.email;
+        const assignedByName = resolveUserName(task.assignedBy);
+        const assigneeName = resolveUserName(task.assignee);
+        const selfAssigned = isSelfAssigned(task);
+
+        if (isAssignedToMe) {
+            if (selfAssigned) {
+                return (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-blue-600 bg-blue-50 font-bold">
+                        {`• Self Assigned to ${currentUser?.name || 'You'}`}
+                    </span>
+                );
+            } else {
+                return (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-blue-600 bg-blue-50 font-bold">
+                        {`• Assigned to You by ${assignedByName}`}
+                    </span>
+                );
+            }
+        } else {
+            if (selfAssigned) {
+                return (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-500 bg-gray-100 font-medium">
+                        {`• Self Assigned to ${assigneeName}`}
+                    </span>
+                );
+            } else {
+                return (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-gray-500 bg-gray-100 font-medium">
+                        {`• Assigned to ${assigneeName} by ${assignedByName}`}
+                    </span>
+                );
+            }
+        }
+    };
+
     // Initial Data Fetch to ensure we have tasks from all stages (similar to Board View)
     React.useEffect(() => {
         // We fetch opportunities for each stage to ensure the Tasks list is populated 
@@ -273,30 +350,7 @@ const Tasks: React.FC = () => {
                                                     {task.opportunityPhone}
                                                 </span>
                                             )}
-                                            {task.assignee && (
-                                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${task.assignee === currentUser?.id || task.assignee === currentUser?.email ? 'text-blue-600 bg-blue-50 font-bold' : 'text-gray-500 bg-gray-100 font-medium'}`}>
-                                                    {task.assignee === currentUser?.id || task.assignee === currentUser?.email ? (
-                                                        task.assignedBy === currentUser?.email || task.assignedBy === currentUser?.id ? (
-                                                            '• Self Assigned'
-                                                        ) : (
-                                                            `• Assigned by ${task.assignedBy?.split('@')[0] || 'Unknown'}`
-                                                        )
-                                                    ) : (
-                                                        <>
-                                                            {task.assignedBy && task.assignee === task.assignedBy ? (
-                                                                `• Self Assigned by ${task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}`
-                                                            ) : (
-                                                                <>
-                                                                    • Assigned to: {task.assignee.includes('@') ? task.assignee.split('@')[0] : task.assignee}
-                                                                    {task.assignedBy && (
-                                                                        <span className="text-[10px] opacity-70"> by {task.assignedBy.includes('@') ? task.assignedBy.split('@')[0] : task.assignedBy}</span>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </span>
-                                            )}
+                                            {task.assignee && renderAssignmentLabel(task)}
                                             {task.dueDate && (
                                                 <span className="flex items-center gap-1">
                                                     <Calendar size={12} />
@@ -372,31 +426,26 @@ const Tasks: React.FC = () => {
                                     <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                                         <h3 className="text-sm font-semibold text-blue-900 mb-1">Assignment</h3>
                                         <p className="text-sm text-blue-700">
-                                            {selectedTask.assignee === currentUser?.id || selectedTask.assignee === currentUser?.email ? (
-                                                selectedTask.assignedBy === currentUser?.email || selectedTask.assignedBy === currentUser?.id ? (
-                                                    <span className="font-medium">Self Assigned</span>
-                                                ) : (
-                                                    <>
-                                                        Assigned to <span className="font-medium">You</span> by{' '}
-                                                        <span className="font-medium">{selectedTask.assignedBy?.split('@')[0] || 'Unknown'}</span>
-                                                    </>
-                                                )
-                                            ) : (
-                                                <>
-                                                    {selectedTask.assignedBy && selectedTask.assignee === selectedTask.assignedBy ? (
-                                                        <>
-                                                            Self Assigned by <span className="font-medium">{selectedTask.assignee.includes('@') ? selectedTask.assignee.split('@')[0] : selectedTask.assignee}</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            Assigned to <span className="font-medium">{selectedTask.assignee.includes('@') ? selectedTask.assignee.split('@')[0] : selectedTask.assignee}</span>
-                                                            {selectedTask.assignedBy && (
-                                                                <> by <span className="font-medium">{selectedTask.assignedBy.includes('@') ? selectedTask.assignedBy.split('@')[0] : selectedTask.assignedBy}</span></>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
+                                            {(() => {
+                                                const isAssignedToMe = selectedTask.assignee === currentUser?.id || selectedTask.assignee === currentUser?.email;
+                                                const assignedByName = resolveUserName(selectedTask.assignedBy);
+                                                const assigneeName = resolveUserName(selectedTask.assignee);
+                                                const selfAssigned = isSelfAssigned(selectedTask);
+
+                                                if (isAssignedToMe) {
+                                                    if (selfAssigned) {
+                                                        return <>Self Assigned: <span className="font-medium">{currentUser?.name || 'You'}</span></>;
+                                                    } else {
+                                                        return <>Assigned to <span className="font-medium">You</span> by <span className="font-medium">{assignedByName}</span></>;
+                                                    }
+                                                } else {
+                                                    if (selfAssigned) {
+                                                        return <>Self Assigned: <span className="font-medium">{assigneeName}</span></>;
+                                                    } else {
+                                                        return <>Assigned to <span className="font-medium">{assigneeName}</span> by <span className="font-medium">{assignedByName}</span></>;
+                                                    }
+                                                }
+                                            })()}
                                         </p>
                                     </div>
                                 )}

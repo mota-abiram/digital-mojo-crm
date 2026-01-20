@@ -256,10 +256,10 @@ const Opportunities: React.FC = () => {
     const [isAddingNote, setIsAddingNote] = useState(false);
 
     const TEAM_MEMBERS = [
-        { name: 'Komal', email: 'komal@digitalmojo.in' },
-        { name: 'Dhiraj', email: 'dhiraj@digitalmojo.in' },
-        { name: 'Rupal', email: 'rupal@digitalmojo.in' },
-        { name: 'Veda', email: 'veda@digitalmojo.in' }
+        { name: 'Komal', email: 'komal@digitalmojo.in', id: 'OwGcGoDXKdPVAMBNTyrY8nDqpmm2' },
+        { name: 'Dhiraj', email: 'dhiraj@digitalmojo.in', id: '58Ba96qczERiK7DzBbMkpoko7Vx1' },
+        { name: 'Rupal', email: 'rupal@digitalmojo.in', id: 'UNUwlgtVDUc6c9uQVMvBiYjmBYB2' },
+        { name: 'Veda', email: 'veda@digitalmojo.in', id: '6l7loPF90teRjJxy61ABWH5GUvX2' }
     ];
 
     // Appointment State
