@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     // ✅ MUST match subfolder deployment
-    base: '/crm/',
+    base: '/',
 
     plugins: [react()],
 
