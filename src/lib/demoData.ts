@@ -65,8 +65,8 @@ function randomDate(daysAgo: number = 0): string {
   return date.toISOString();
 }
 
-function generateId(): string {
-  return `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export function generateId(): string {
+  return `demo_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 export const generateDemoContacts = (count: number = 25): Contact[] => {
