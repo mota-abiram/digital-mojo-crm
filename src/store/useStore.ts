@@ -3,6 +3,7 @@ import { Contact, Opportunity, Appointment, Conversation, Notification, Message,
 import { api } from '../services/api';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { isDemoMode } from '../lib/demoData';
 
 interface AppState {
     currentUser: User | null;
@@ -89,7 +90,9 @@ export const useStore = create<AppState>((set, get) => ({
     isLoadingAuth: true,
     setCurrentUser: (user) => set({ currentUser: user }),
     logout: async () => {
-        await signOut(auth);
+        if (!isDemoMode()) {
+            await signOut(auth);
+        }
         get().setGoogleToken(null);
         set({
             currentUser: null,
@@ -101,6 +104,21 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
     initializeAuthListener: () => {
+        if (isDemoMode()) {
+            // Demo mode: set demo user immediately
+            set({
+                currentUser: {
+                    id: 'demo_user',
+                    name: 'Demo User',
+                    email: 'demo@example.com',
+                    avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
+                },
+                isLoadingAuth: false
+            });
+            get().initializeListeners();
+            return;
+        }
+        
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 set({

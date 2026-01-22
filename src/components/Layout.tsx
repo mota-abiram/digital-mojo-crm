@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import CommandPalette from './CommandPalette';
+import DemoBanner from './DemoBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -138,6 +139,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content Wrapper */}
       <div className="flex flex-1 flex-col h-full overflow-hidden">
+        {/* Demo Banner */}
+        <DemoBanner />
         {/* Top Header */}
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 px-4 md:px-8 transition-colors duration-200">
           <div className="flex items-center gap-4">

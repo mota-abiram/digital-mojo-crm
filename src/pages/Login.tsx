@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -7,15 +7,43 @@ import { isUserAllowed } from '../lib/admin';
 import toast from 'react-hot-toast';
 import { Lock, Mail, Loader2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
+import { isDemoMode } from '../lib/demoData';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { setCurrentUser, setGoogleToken } = useStore();
+
+    // Auto-login in demo mode
+    useEffect(() => {
+        if (isDemoMode()) {
+            setCurrentUser({
+                id: 'demo_user',
+                name: 'Demo User',
+                email: 'demo@example.com',
+                avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
+            });
+            navigate('/dashboard');
+        }
+    }, [navigate, setCurrentUser]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Skip authentication in demo mode
+        if (isDemoMode()) {
+            setCurrentUser({
+                id: 'demo_user',
+                name: 'Demo User',
+                email: 'demo@example.com',
+                avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
+            });
+            navigate('/dashboard');
+            return;
+        }
+        
         if (!email || !password) {
             toast.error('Please enter both email and password');
             return;
@@ -47,9 +75,19 @@ const Login: React.FC = () => {
         }
     };
 
-    const { setGoogleToken } = useStore();
-
     const handleGoogleLogin = async () => {
+        // Skip authentication in demo mode
+        if (isDemoMode()) {
+            setCurrentUser({
+                id: 'demo_user',
+                name: 'Demo User',
+                email: 'demo@example.com',
+                avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
+            });
+            navigate('/dashboard');
+            return;
+        }
+        
         try {
             const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
@@ -76,6 +114,15 @@ const Login: React.FC = () => {
             toast.error('Failed to login with Google');
         }
     };
+
+    // Don't show login form in demo mode (will auto-redirect)
+    if (isDemoMode()) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

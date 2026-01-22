@@ -1,8 +1,18 @@
 import { db } from '../lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, arrayUnion, query, orderBy, onSnapshot, where, startAfter, limit, setDoc } from 'firebase/firestore';
 import { Contact, Opportunity, Appointment, Conversation, Message, Notification } from '../types';
+import { isDemoMode } from '../lib/demoData';
+import { mockApi } from './mockApi';
 
-export const api = {
+// Use mock API in demo mode, otherwise use Firebase
+const getApi = () => {
+  if (isDemoMode()) {
+    return mockApi;
+  }
+  return firebaseApi;
+};
+
+const firebaseApi = {
     contacts: {
         // SHARED: Contacts are visible to ALL logged-in users (no userId filter)
         getAll: async (userId?: string, lastDoc?: any, limitCount = 20) => {
@@ -472,3 +482,5 @@ export const api = {
         },
     }
 };
+
+export const api = getApi();
