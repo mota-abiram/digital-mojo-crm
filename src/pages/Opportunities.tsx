@@ -253,6 +253,7 @@ const Opportunities: React.FC = () => {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [isAddingTask, setIsAddingTask] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [isAddingNote, setIsAddingNote] = useState(false);
 
     const TEAM_MEMBERS = [
@@ -488,6 +489,9 @@ const Opportunities: React.FC = () => {
             });
             setTasks(opp.tasks || []);
             setNotes(opp.notes || []);
+            setIsAddingNote(false);
+            setEditingNoteId(null);
+            setNewNoteContent('');
         } else {
             setEditingId(null);
             setFormData({
@@ -496,6 +500,7 @@ const Opportunities: React.FC = () => {
             });
             setTasks([]);
             setNotes([]);
+            setEditingNoteId(null);
         }
         setActiveTab('details');
         setIsModalOpen(true);
@@ -694,14 +699,31 @@ const Opportunities: React.FC = () => {
 
     const handleAddNote = () => {
         if (!newNoteContent.trim()) return;
-        const newNote: Note = {
-            id: Date.now().toString(),
-            content: newNoteContent,
-            createdAt: new Date().toISOString()
-        };
-        setNotes([...notes, newNote]);
+
+        if (editingNoteId) {
+            const updatedNotes = notes.map(n => n.id === editingNoteId ? {
+                ...n,
+                content: newNoteContent
+            } : n);
+            setNotes(updatedNotes);
+            setEditingNoteId(null);
+        } else {
+            const newNote: Note = {
+                id: Date.now().toString(),
+                content: newNoteContent,
+                createdAt: new Date().toISOString()
+            };
+            setNotes([...notes, newNote]);
+        }
+
         setNewNoteContent('');
         setIsAddingNote(false);
+    };
+
+    const handleStartEditNote = (note: Note) => {
+        setNewNoteContent(note.content);
+        setEditingNoteId(note.id);
+        setIsAddingNote(true);
     };
 
     const handleDeleteNote = (noteId: string) => {
@@ -1463,9 +1485,14 @@ const Opportunities: React.FC = () => {
                                                                             <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
                                                                             <div className="flex justify-between items-center text-xs text-gray-500">
                                                                                 <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
-                                                                                <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                    <Trash2 size={12} />
-                                                                                </button>
+                                                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                    <button onClick={() => handleStartEditNote(note)} className="text-gray-400 hover:text-brand-blue" title="Edit note">
+                                                                                        <Edit2 size={14} />
+                                                                                    </button>
+                                                                                    <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600" title="Delete note">
+                                                                                        <Trash2 size={14} />
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     ))
@@ -1906,8 +1933,14 @@ const Opportunities: React.FC = () => {
                                                             autoFocus
                                                         />
                                                         <div className="flex justify-end gap-2">
-                                                            <button onClick={() => setIsAddingNote(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                            <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-white bg-brand-blue rounded hover:bg-brand-blue/90">Add Note</button>
+                                                            <button onClick={() => {
+                                                                setIsAddingNote(false);
+                                                                setEditingNoteId(null);
+                                                                setNewNoteContent('');
+                                                            }} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
+                                                            <button onClick={handleAddNote} className="px-3 py-1.5 text-sm text-white bg-brand-blue rounded hover:bg-brand-blue/90">
+                                                                {editingNoteId ? 'Update Note' : 'Add Note'}
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -1943,9 +1976,14 @@ const Opportunities: React.FC = () => {
                                                                             <Clock size={12} />
                                                                             <span>{format(new Date(note.createdAt), 'MMM d, yyyy h:mm a')}</span>
                                                                         </div>
-                                                                        <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600">
-                                                                            <Trash2 size={14} />
-                                                                        </button>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <button onClick={() => handleStartEditNote(note)} className="text-gray-400 hover:text-brand-blue" title="Edit note">
+                                                                                <Edit2 size={18} />
+                                                                            </button>
+                                                                            <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600" title="Delete note">
+                                                                                <Trash2 size={18} />
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
