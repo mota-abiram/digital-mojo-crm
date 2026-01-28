@@ -234,7 +234,11 @@ const Opportunities: React.FC = () => {
         contactEmail: '',
         contactPhone: '',
         companyName: '',
-
+        utm_source: '',
+        utm_medium: '',
+        utm_campaign: '',
+        your_website: '',
+        budget: '',
         tags: '',
         calendar: '',
         contactValue: 'Standard',
@@ -471,24 +475,33 @@ const Opportunities: React.FC = () => {
     const handleOpenModal = (opp?: Opportunity) => {
         if (opp) {
             setEditingId(opp.id);
-            const linkedContact = contacts.find(c => c.id === opp.contactId);
+            const linkedContact = contacts.find(c => c.id === (opp.contactId || ''));
+
+            // Safety check for value
+            const oppValue = opp.value !== undefined && opp.value !== null ? opp.value.toString() : "0";
+
             setFormData({
-                name: opp.name,
-                value: opp.value.toString(),
-                stage: opp.stage,
-                status: opp.status,
-                source: opp.source || '',
+                name: opp.name || '',
+                value: oppValue,
+                stage: opp.stage || '16',
+                status: opp.status || 'Open',
+                source: opp.source || 'Website Form',
                 contactName: linkedContact?.name || opp.contactName || '',
                 contactEmail: linkedContact?.email || opp.contactEmail || '',
                 contactPhone: linkedContact?.phone || opp.contactPhone || '',
                 companyName: linkedContact?.companyName || opp.companyName || '',
-                tags: opp.tags ? opp.tags.join(', ') : '',
+                utm_source: opp.utm_source || '',
+                utm_medium: opp.utm_medium || '',
+                utm_campaign: opp.utm_campaign || '',
+                your_website: opp.your_website || '',
+                budget: opp.budget || '',
+                tags: Array.isArray(opp.tags) ? opp.tags.join(', ') : '',
                 calendar: opp.calendar || '',
                 contactValue: linkedContact?.Value || 'Standard',
                 followUpDate: opp.followUpDate || ''
             });
-            setTasks(opp.tasks || []);
-            setNotes(opp.notes || []);
+            setTasks(Array.isArray(opp.tasks) ? opp.tasks : []);
+            setNotes(Array.isArray(opp.notes) ? opp.notes : []);
             setIsAddingNote(false);
             setEditingNoteId(null);
             setNewNoteContent('');
@@ -496,7 +509,9 @@ const Opportunities: React.FC = () => {
             setEditingId(null);
             setFormData({
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
-                contactName: '', contactEmail: '', contactPhone: '', companyName: '', tags: '', calendar: '', contactValue: 'Standard', followUpDate: ''
+                contactName: '', contactEmail: '', contactPhone: '', companyName: '',
+                utm_source: '', utm_medium: '', utm_campaign: '', your_website: '', budget: '',
+                tags: '', calendar: '', contactValue: 'Standard', followUpDate: ''
             });
             setTasks([]);
             setNotes([]);
@@ -564,39 +579,43 @@ const Opportunities: React.FC = () => {
         }
 
         const oppData: any = {
-            name: formData.name,
-            value: Number(formData.value),
-            stage: formData.stage,
-            source: formData.source,
-            contactName: formData.contactName,
-            contactEmail: formData.contactEmail,
-            contactPhone: formData.contactPhone,
-            companyName: formData.companyName,
-            contactId: finalContactId,
-            calendar: formData.calendar,
-            status: formData.status as any,
-            followUpDate: formData.followUpDate,
+            name: formData.name || 'Website Lead',
+            value: Number(formData.value) || 0,
+            stage: formData.stage || '16', // Always fallback to 'Yet to contact'
+            source: formData.source || 'Website Form',
+            contactName: formData.contactName || '',
+            contactEmail: formData.contactEmail || '',
+            contactPhone: formData.contactPhone || '',
+            companyName: formData.companyName || '',
+            utm_source: formData.utm_source || '',
+            utm_medium: formData.utm_medium || '',
+            utm_campaign: formData.utm_campaign || '',
+            your_website: formData.your_website || '',
+            budget: formData.budget || '',
+            tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== '') : [],
+            contactId: finalContactId || '',
+            calendar: formData.calendar || '',
+            status: formData.status || 'Open',
+            followUpDate: formData.followUpDate || '',
             updatedAt: new Date().toISOString(),
-            tasks: tasks,
-            notes: notes
+            tasks: tasks || [],
+            notes: notes || []
         };
-
-        if (!editingId) {
-            oppData.createdAt = new Date().toISOString();
-        }
 
         try {
             if (editingId) {
+                console.log("Saving Update to Lead:", editingId);
                 await updateOpportunity(editingId, oppData);
-                toast.success('Opportunity updated successfully');
+                toast.success('Lead updated successfully');
             } else {
+                oppData.createdAt = new Date().toISOString();
                 await addOpportunity(oppData);
-                toast.success('Opportunity created successfully');
+                toast.success('New lead created');
             }
             setIsModalOpen(false);
         } catch (error: any) {
-            console.error('Error saving opportunity:', error);
-            toast.error('Failed to save opportunity: ' + (error.message || 'Unknown error'));
+            console.error('CRM Save Error:', error);
+            toast.error('Could not save: ' + (error.message || 'Permission Denied'));
         } finally {
             setIsSubmitting(false);
         }
@@ -1444,6 +1463,48 @@ const Opportunities: React.FC = () => {
                                                                 <option value="Lost">Lost</option>
                                                                 <option value="Abandoned">Abandoned</option>
                                                             </select>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">UTM Source</label>
+                                                                <input
+                                                                    type="text"
+                                                                    readOnly
+                                                                    value={formData.utm_source}
+                                                                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">UTM Medium</label>
+                                                                <input
+                                                                    type="text"
+                                                                    readOnly
+                                                                    value={formData.utm_medium}
+                                                                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">UTM Campaign</label>
+                                                            <input
+                                                                type="text"
+                                                                readOnly
+                                                                value={formData.utm_campaign}
+                                                                className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Website</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Client Website"
+                                                                value={formData.your_website}
+                                                                onChange={e => setFormData({ ...formData, your_website: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
                                                         </div>
 
 

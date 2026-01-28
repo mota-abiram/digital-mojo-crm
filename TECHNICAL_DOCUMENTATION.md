@@ -55,7 +55,7 @@ The platform follows a **Single Page Application (SPA)** architecture interactin
 
 ### Data Flow
 *   **Real-time Synch**: Uses Firestore `onSnapshot` listeners for collaborative features like conversations and appointments.
-*   **Pagination**: Contacts and Opportunities use cursor-based pagination (`startAfter`) to handle thousands of records efficiently.
+*   **Pagination**: Contacts and Opportunities use cursor-based pagination (`startAfter`) to     handle thousands of records efficiently.
 *   **Search**: Implements a hybrid approach:
     *   Direct Firestore queries for indexed fields.
     *   Client-side filtering for complex, multi-field text matching to overcome NoSQL query limitations.
@@ -82,7 +82,7 @@ The platform follows a **Single Page Application (SPA)** architecture interactin
 ### Tasks & Activities
 *   **Purpose**: Operational execution.
 *   **Functionalities**: Self-assignment, recurring tasks, and due-date notifications.
-*   **Permissions**: Built-in logic ensures only creators can delete tasks, and assignees can only toggle completion status.
+*   **Permissions**: Built-in logic ensures only creators can delete tasks, and assignees can  only  toggle completion status.
 
 ---
 

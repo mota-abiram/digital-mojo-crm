@@ -52,6 +52,11 @@ export interface Opportunity {
   contactPhone?: string;
   companyName?: string;
   source?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  your_website?: string;
+  budget?: string;
   calendar?: string;
   createdAt?: string;
   updatedAt?: string;
