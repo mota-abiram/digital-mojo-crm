@@ -1537,6 +1537,7 @@ const Opportunities: React.FC = () => {
                                                                 </div>
                                                             </div>
                                                         </div>
+                                                    </div>
                                                 </section>
                                             </>
                                         )}
