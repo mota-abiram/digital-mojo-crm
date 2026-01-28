@@ -234,9 +234,6 @@ const Opportunities: React.FC = () => {
         contactEmail: '',
         contactPhone: '',
         companyName: '',
-        utm_source: '',
-        utm_medium: '',
-        utm_campaign: '',
         your_website: '',
         budget: '',
         tags: '',
@@ -490,9 +487,6 @@ const Opportunities: React.FC = () => {
                 contactEmail: linkedContact?.email || opp.contactEmail || '',
                 contactPhone: linkedContact?.phone || opp.contactPhone || '',
                 companyName: linkedContact?.companyName || opp.companyName || '',
-                utm_source: opp.utm_source || '',
-                utm_medium: opp.utm_medium || '',
-                utm_campaign: opp.utm_campaign || '',
                 your_website: opp.your_website || '',
                 budget: opp.budget || '',
                 tags: Array.isArray(opp.tags) ? opp.tags.join(', ') : '',
@@ -510,7 +504,7 @@ const Opportunities: React.FC = () => {
             setFormData({
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
                 contactName: '', contactEmail: '', contactPhone: '', companyName: '',
-                utm_source: '', utm_medium: '', utm_campaign: '', your_website: '', budget: '',
+                your_website: '', budget: '',
                 tags: '', calendar: '', contactValue: 'Standard', followUpDate: ''
             });
             setTasks([]);
@@ -587,9 +581,6 @@ const Opportunities: React.FC = () => {
             contactEmail: formData.contactEmail || '',
             contactPhone: formData.contactPhone || '',
             companyName: formData.companyName || '',
-            utm_source: formData.utm_source || '',
-            utm_medium: formData.utm_medium || '',
-            utm_campaign: formData.utm_campaign || '',
             your_website: formData.your_website || '',
             budget: formData.budget || '',
             tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t !== '') : [],
