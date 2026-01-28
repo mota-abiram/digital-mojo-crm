@@ -1456,85 +1456,85 @@ const Opportunities: React.FC = () => {
                                                             </select>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-4">
+                                                        {/* Website */}
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Website</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Client Website"
+                                                                value={formData.your_website}
+                                                                onChange={e => setFormData({ ...formData, your_website: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            />
+                                                        </div>
 
+                                                        <hr className="border-gray-100 my-6" />
 
-                                                            <div>
-                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Website</label>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Client Website"
-                                                                    value={formData.your_website}
-                                                                    onChange={e => setFormData({ ...formData, your_website: e.target.value })}
-                                                                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                />
+                                                        {/* Notes Section */}
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                                                                <button
+                                                                    onClick={() => setIsAddingNote(true)}
+                                                                    className="text-xs text-brand-blue font-medium hover:underline"
+                                                                >
+                                                                    + Add Note
+                                                                </button>
                                                             </div>
 
-
-
-                                                            <hr className="border-gray-200" />
-
-                                                            <div>
-                                                                <div className="flex justify-between items-center mb-2">
-                                                                    <label className="block text-sm font-medium text-gray-700">Notes</label>
-                                                                    <button
-                                                                        onClick={() => setIsAddingNote(true)}
-                                                                        className="text-xs text-brand-blue font-medium hover:underline"
-                                                                    >
-                                                                        + Add Note
-                                                                    </button>
-                                                                </div>
-
-                                                                {isAddingNote && (
-                                                                    <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                                        <textarea
-                                                                            placeholder="Write a note..."
-                                                                            value={newNoteContent}
-                                                                            onChange={e => setNewNoteContent(e.target.value)}
-                                                                            className="w-full p-2 bg-white border border-gray-300 rounded text-sm focus:ring-brand-blue focus:border-brand-blue mb-2 min-h-[80px]"
-                                                                        />
-                                                                        <div className="flex justify-end gap-2">
-                                                                            <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
-                                                                            <button onClick={handleAddNote} className="px-2 py-1 text-xs text-white bg-brand-blue rounded hover:bg-brand-blue/90">Save</button>
-                                                                        </div>
+                                                            {isAddingNote && (
+                                                                <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                                    <textarea
+                                                                        placeholder="Write a note..."
+                                                                        value={newNoteContent}
+                                                                        onChange={e => setNewNoteContent(e.target.value)}
+                                                                        className="w-full p-2 bg-white border border-gray-300 rounded text-sm focus:ring-brand-blue focus:border-brand-blue mb-2 min-h-[80px]"
+                                                                    />
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <button onClick={() => setIsAddingNote(false)} className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded">Cancel</button>
+                                                                        <button onClick={handleAddNote} className="px-2 py-1 text-xs text-white bg-brand-blue rounded hover:bg-brand-blue/90">Save</button>
                                                                     </div>
-                                                                )}
+                                                                </div>
+                                                            )}
 
-                                                                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                                                                    {notes.length === 0 && !isAddingNote ? (
-                                                                        <p className="text-sm text-gray-400 italic">No notes yet.</p>
-                                                                    ) : (
-                                                                        [...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
-                                                                            <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
-                                                                                <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
-                                                                                <div className="flex justify-between items-center text-xs text-gray-500">
-                                                                                    <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
-                                                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                        <button onClick={() => handleStartEditNote(note)} className="text-gray-400 hover:text-brand-blue" title="Edit note">
-                                                                                            <Edit2 size={14} />
-                                                                                        </button>
-                                                                                        <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600" title="Delete note">
-                                                                                            <Trash2 size={14} />
-                                                                                        </button>
-                                                                                    </div>
+                                                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                                                {notes.length === 0 && !isAddingNote ? (
+                                                                    <p className="text-sm text-gray-400 italic">No notes yet.</p>
+                                                                ) : (
+                                                                    [...notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
+                                                                        <div key={note.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg group">
+                                                                            <p className="text-sm text-gray-800 mb-1 whitespace-pre-wrap">{note.content}</p>
+                                                                            <div className="flex justify-between items-center text-xs text-gray-500">
+                                                                                <span>{format(new Date(note.createdAt), 'MMM d, h:mm a')}</span>
+                                                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                    <button onClick={() => handleStartEditNote(note)} className="text-gray-400 hover:text-brand-blue" title="Edit note">
+                                                                                        <Edit2 size={14} />
+                                                                                    </button>
+                                                                                    <button onClick={() => handleDeleteNote(note.id)} className="text-gray-400 hover:text-red-600" title="Delete note">
+                                                                                        <Trash2 size={14} />
+                                                                                    </button>
                                                                                 </div>
                                                                             </div>
-                                                                        ))
-                                                                    )}
-                                                                </div>
+                                                                        </div>
+                                                                    ))
+                                                                )}
                                                             </div>
+                                                        </div>
 
-                                                            <div className="pt-4 border-t border-gray-100 mt-4">
-                                                                <label className="block mb-1.5 text-sm font-medium text-gray-700">Follow up</label>
-                                                                <div className="relative">
-                                                                    <Calendar size={16} className="absolute left-3 top-2.5 text-gray-400" />
-                                                                    <input
-                                                                        type="date"
-                                                                        value={formData.followUpDate}
-                                                                        onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
-                                                                        className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-                                                                    />
-                                                                </div>
+                                                        <hr className="border-gray-100 my-6" />
+
+                                                        {/* Follow up Section */}
+                                                        <div>
+                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up</label>
+                                                            <div className="relative">
+                                                                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                                <input
+                                                                    type="date"
+                                                                    placeholder="dd/mm/yyyy"
+                                                                    value={formData.followUpDate}
+                                                                    onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                />
                                                             </div>
                                                         </div>
                                                     </div>
