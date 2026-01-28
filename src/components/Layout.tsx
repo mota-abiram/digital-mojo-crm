@@ -4,15 +4,13 @@ import {
   LayoutDashboard,
   CalendarDays,
   Target,
-  Search,
   ChevronDown,
   CheckSquare,
   X,
   LogOut,
   User as UserIcon,
   Settings,
-  Menu,
-  Bell
+  Menu
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import CommandPalette from './CommandPalette';
@@ -26,9 +24,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { contacts, opportunities, currentUser, logout } = useStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showResults, setShowResults] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -47,18 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const lower = searchQuery.toLowerCase();
-    const results = [
-      ...contacts.filter(c => c.name.toLowerCase().includes(lower)).map(c => ({ ...c, type: 'Contact', url: '/contacts' })),
-      ...opportunities.filter(o => o.name.toLowerCase().includes(lower)).map(o => ({ ...o, type: 'Opportunity', url: '/opportunities' }))
-    ];
-    setSearchResults(results);
-  }, [searchQuery, contacts, opportunities]);
+
 
   const pendingTasksCount = useMemo(() => {
     let count = 0;
@@ -159,44 +143,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-2 md:gap-6">
-            <div className="relative hidden md:block w-64">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowResults(true);
-                }}
-                onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                className="block w-full rounded-lg border-0 bg-gray-100 dark:bg-gray-700 py-2 pl-10 pr-4 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-600 placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
-                placeholder="Search..."
-              />
-              {/* Search Results Dropdown */}
-              {showResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto z-50">
-                  {searchResults.map((result, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0"
-                      onClick={() => navigate(result.url)}
-                    >
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{result.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{result.type}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            <div className="flex items-center gap-3">
-              <button className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors">
-                <Bell size={20} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
-              </button>
-            </div>
 
             <div className="relative" ref={profileRef}>
               <div
