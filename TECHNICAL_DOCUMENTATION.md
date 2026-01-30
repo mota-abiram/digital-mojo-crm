@@ -82,7 +82,7 @@ The platform follows a **Single Page Application (SPA)** architecture interactin
 ### Tasks & Activities
 *   **Purpose**: Operational execution.
 *   **Functionalities**: Self-assignment, recurring tasks, and due-date notifications.
-*   **Permissions**: Built-in logic ensures only creators can delete tasks, and assignees can  only  toggle completion status.
+*   **Permissions**: Built-in logic ensures only creators can delete tasks, and assignees can only toggle completion status.
 
 ---
 

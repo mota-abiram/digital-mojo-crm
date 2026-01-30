@@ -63,6 +63,7 @@ export interface Opportunity {
   tasks?: Task[];
   notes?: Note[];
   followUpDate?: string;
+  followUpRead?: boolean;
 }
 
 export interface PipelineColumn {

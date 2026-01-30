@@ -118,7 +118,7 @@ export const useStore = create<AppState>((set, get) => ({
             get().initializeListeners();
             return;
         }
-        
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 set({
@@ -538,6 +538,11 @@ export const useStore = create<AppState>((set, get) => ({
                     }
                 }
             }
+        }
+
+        // Reset followUpRead if followUpDate is updated to a new value
+        if (opp.followUpDate !== undefined) {
+            opp.followUpRead = false;
         }
 
         await api.opportunities.update(id, opp);

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -16,3 +16,14 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+// 🔥 Connect to emulators when running on localhost
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    console.log('🔥 Connected to Firebase Emulators - ZERO reads billed!');
+
+    // Connect Firestore to emulator
+    connectFirestoreEmulator(db, 'localhost', 8080);
+
+    // Connect Auth to emulator
+    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+}

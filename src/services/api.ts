@@ -6,10 +6,10 @@ import { mockApi } from './mockApi';
 
 // Use mock API in demo mode, otherwise use Firebase
 const getApi = () => {
-  if (isDemoMode()) {
-    return mockApi;
-  }
-  return firebaseApi;
+    if (isDemoMode()) {
+        return mockApi;
+    }
+    return firebaseApi;
 };
 
 const firebaseApi = {
@@ -230,6 +230,21 @@ const firebaseApi = {
                     lastDoc: null,
                     hasMore: false
                 };
+            }
+        },
+        // Fetch opportunities by follow-up date
+        getByFollowUpDate: async (followUpDate: string) => {
+            try {
+                const q = query(
+                    collection(db, 'opportunities'),
+                    where('followUpDate', '==', followUpDate)
+                );
+                const querySnapshot = await getDocs(q);
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+                return data;
+            } catch (error) {
+                console.warn("Error fetching opportunities by follow-up date:", error);
+                return [];
             }
         },
         // SHARED: Subscribe to ALL opportunities (no userId filter)

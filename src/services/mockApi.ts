@@ -1,8 +1,8 @@
 import { Contact, Opportunity, Appointment, Conversation, Message } from '../types';
-import { 
-  generateDemoContacts, 
-  generateDemoOpportunities, 
-  generateDemoAppointments, 
+import {
+  generateDemoContacts,
+  generateDemoOpportunities,
+  generateDemoAppointments,
   generateDemoConversations,
   initializeDemoData,
   generateId,
@@ -45,9 +45,9 @@ export const mockApi = {
       const startIndex = lastDoc ? parseInt(lastDoc) || 0 : 0;
       const endIndex = startIndex + limitCount;
       const data = contacts.slice(startIndex, endIndex);
-      return { 
-        data, 
-        lastDoc: endIndex < contacts.length ? endIndex.toString() : null 
+      return {
+        data,
+        lastDoc: endIndex < contacts.length ? endIndex.toString() : null
       };
     },
     get: async (id: string) => {
@@ -71,7 +71,7 @@ export const mockApi = {
       const contacts = getStoredData<Contact>('demo_contacts', []);
       callback(contacts);
       // Return a no-op unsubscribe function
-      return () => {};
+      return () => { };
     },
     create: async (contact: Omit<Contact, 'id'>) => {
       await delay(300);
@@ -122,24 +122,24 @@ export const mockApi = {
       const contacts = getStoredData<Contact>('demo_contacts', []);
       const seen = new Map<string, string>();
       const duplicateIds: string[] = [];
-      
+
       contacts.forEach(contact => {
         const email = (contact.email || '').toLowerCase().trim();
         const name = (contact.name || '').toLowerCase().trim();
         const key = email || name;
-        
+
         if (key && seen.has(key)) {
           duplicateIds.push(contact.id);
         } else if (key) {
           seen.set(key, contact.id);
         }
       });
-      
+
       if (duplicateIds.length > 0) {
         const filtered = contacts.filter(c => !duplicateIds.includes(c.id));
         saveStoredData('demo_contacts', filtered);
       }
-      
+
       return { removed: duplicateIds.length, kept: seen.size };
     }
   },
@@ -150,9 +150,9 @@ export const mockApi = {
       const startIndex = lastDoc ? parseInt(lastDoc) || 0 : 0;
       const endIndex = startIndex + limitCount;
       const data = opportunities.slice(startIndex, endIndex);
-      return { 
-        data, 
-        lastDoc: endIndex < opportunities.length ? endIndex.toString() : null 
+      return {
+        data,
+        lastDoc: endIndex < opportunities.length ? endIndex.toString() : null
       };
     },
     getByStage: async (stageId: string, lastDoc?: any, limitCount: number = 10) => {
@@ -168,10 +168,15 @@ export const mockApi = {
         hasMore: endIndex < filtered.length
       };
     },
+    getByFollowUpDate: async (followUpDate: string) => {
+      await delay(200);
+      const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
+      return opportunities.filter(o => o.followUpDate === followUpDate);
+    },
     subscribe: (callback: (data: Opportunity[]) => void, userId?: string) => {
       const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
       callback(opportunities);
-      return () => {};
+      return () => { };
     },
     create: async (opp: Omit<Opportunity, 'id'>) => {
       await delay(300);
@@ -210,30 +215,30 @@ export const mockApi = {
       await delay(200);
       const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
       const counts: Record<string, { count: number; value: number }> = {};
-      
+
       opportunities.forEach(opp => {
         const stage = opp.stage || 'Unknown';
         const value = Number(opp.value) || 0;
-        
+
         if (!counts[stage]) {
           counts[stage] = { count: 0, value: 0 };
         }
         counts[stage].count += 1;
         counts[stage].value += value;
       });
-      
+
       return counts;
     },
     getDashboardStats: async (daysBack: number = 30) => {
       await delay(400);
       const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
-      
+
       const now = new Date();
       now.setHours(23, 59, 59, 999);
       const pastDate = new Date();
       pastDate.setDate(now.getDate() - (daysBack - 1));
       pastDate.setHours(0, 0, 0, 0);
-      
+
       const filteredOpportunities = opportunities.filter(opp => {
         if (!opp.createdAt) return false;
         try {
@@ -244,14 +249,14 @@ export const mockApi = {
           return false;
         }
       });
-      
+
       const totalOpportunities = filteredOpportunities.length;
       const totalPipelineValue = filteredOpportunities.reduce((sum, opp) => sum + Number(opp.value || 0), 0);
       const wonOpportunities = filteredOpportunities.filter(opp => opp.status === 'Won' || opp.stage === '10').length;
       const lostOpportunities = filteredOpportunities.filter(opp => opp.status === 'Lost').length;
       const openOpportunities = filteredOpportunities.filter(opp => opp.status === 'Open').length;
       const conversionRate = totalOpportunities > 0 ? ((wonOpportunities / totalOpportunities) * 100) : 0;
-      
+
       const stageBreakdown: Record<string, { count: number; value: number }> = {};
       filteredOpportunities.forEach(opp => {
         const stage = opp.stage || 'Unknown';
@@ -261,11 +266,11 @@ export const mockApi = {
         stageBreakdown[stage].count += 1;
         stageBreakdown[stage].value += Number(opp.value || 0);
       });
-      
+
       const sortedOpps = [...filteredOpportunities].sort((a, b) =>
         new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
       );
-      
+
       let cumulativeValue = 0;
       const trendMap = new Map<string, number>();
       sortedOpps.forEach(opp => {
@@ -276,11 +281,11 @@ export const mockApi = {
         }
       });
       const pipelineTrend = Array.from(trendMap.entries()).map(([name, value]) => ({ name, value }));
-      
+
       const allTasks = filteredOpportunities.flatMap(o => o.tasks || []);
       const completedTasks = allTasks.filter(t => t.isCompleted).length;
       const pendingTasks = allTasks.length - completedTasks;
-      
+
       return {
         totalOpportunities,
         totalPipelineValue,
@@ -303,24 +308,24 @@ export const mockApi = {
       const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
       const seen = new Map<string, string>();
       const duplicateIds: string[] = [];
-      
+
       opportunities.forEach(opp => {
         const name = (opp.name || '').toLowerCase().trim();
         const contactId = opp.contactId || '';
         const key = `${name}_${contactId}`;
-        
+
         if (name && seen.has(key)) {
           duplicateIds.push(opp.id);
         } else if (name) {
           seen.set(key, opp.id);
         }
       });
-      
+
       if (duplicateIds.length > 0) {
         const filtered = opportunities.filter(o => !duplicateIds.includes(o.id));
         saveStoredData('demo_opportunities', filtered);
       }
-      
+
       return { removed: duplicateIds.length, kept: seen.size };
     }
   },
@@ -337,7 +342,7 @@ export const mockApi = {
       const appointments = getStoredData<Appointment>('demo_appointments', []);
       const filtered = userId ? appointments.filter(a => a.assignedTo === userId) : appointments;
       callback(filtered);
-      return () => {};
+      return () => { };
     },
     create: async (apt: Omit<Appointment, 'id'>) => {
       await delay(300);
@@ -370,14 +375,14 @@ export const mockApi = {
     getAll: async (userId?: string) => {
       await delay(300);
       const conversations = getStoredData<Conversation>('demo_conversations', []);
-      return conversations.sort((a, b) => 
+      return conversations.sort((a, b) =>
         new Date(b.time).getTime() - new Date(a.time).getTime()
       );
     },
     subscribe: (callback: (data: Conversation[]) => void, userId?: string) => {
       const conversations = getStoredData<Conversation>('demo_conversations', []);
       callback(conversations);
-      return () => {};
+      return () => { };
     },
     sendMessage: async (conversationId: string, message: Message) => {
       await delay(300);

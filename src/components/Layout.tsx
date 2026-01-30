@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -10,11 +11,17 @@ import {
   LogOut,
   User as UserIcon,
   Settings,
-  Menu
+  Menu,
+  Bell,
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import CommandPalette from './CommandPalette';
 import DemoBanner from './DemoBanner';
+import { api } from '../services/api';
+import { Opportunity } from '../types';
+import toast from 'react-hot-toast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,17 +30,21 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { contacts, opportunities, currentUser, logout } = useStore();
+  const { contacts, opportunities, appointments, currentUser, logout, updateOpportunity } = useStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isRemindersOpen, setIsRemindersOpen] = useState(false);
+  const [todayOpportunities, setTodayOpportunities] = useState<Opportunity[]>([]);
   const profileRef = useRef<HTMLDivElement>(null);
-
-
+  const remindersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
+      }
+      if (remindersRef.current && !remindersRef.current.contains(event.target as Node)) {
+        setIsRemindersOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,7 +53,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, []);
 
+  // Fetch opportunities with today's follow-up date
+  useEffect(() => {
+    if (!currentUser) return;
 
+    const fetchTodayFollowUps = async () => {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      try {
+        const opps = await api.opportunities.getByFollowUpDate(todayStr);
+        setTodayOpportunities(opps);
+      } catch (error) {
+        console.error("Error fetching today's follow-ups:", error);
+      }
+    };
+
+    fetchTodayFollowUps();
+    // Refresh every 5 minutes to catch any new follow-ups
+    const refreshInterval = setInterval(fetchTodayFollowUps, 5 * 60 * 1000);
+
+    return () => clearInterval(refreshInterval);
+  }, [currentUser]);
 
   const pendingTasksCount = useMemo(() => {
     let count = 0;
@@ -58,6 +88,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     });
     return count;
   }, [opportunities, currentUser]);
+
+
+  const todayReminders = useMemo(() => {
+    return todayOpportunities.filter(opp =>
+      opp.status === 'Open'
+    ).map(opp => ({
+      id: opp.id,
+      type: 'follow-up' as const,
+      title: opp.companyName || opp.name,
+      time: 'Today',
+      description: 'Opportunity follow-up'
+    }));
+  }, [todayOpportunities]);
 
   const handleLogout = async () => {
     await logout();
@@ -142,8 +185,119 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Reminders Dropdown */}
+            <div className="relative" ref={remindersRef}>
+              {(() => {
+                const unreadCount = todayReminders.filter(r => !todayOpportunities.find(o => o.id === r.id)?.followUpRead).length;
+                const hasUnread = unreadCount > 0;
 
+                return (
+                  <button
+                    onClick={() => setIsRemindersOpen(!isRemindersOpen)}
+                    className={`p-2 rounded-full transition-all relative ${isRemindersOpen ? 'bg-blue-50 text-brand-blue' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                  >
+                    <Bell
+                      size={20}
+                      className={`${hasUnread ? 'text-red-500 fill-red-500 animate-ring' : ''}`}
+                    />
+                    {hasUnread && (
+                      <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-sm animate-pulse">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
+
+              {isRemindersOpen && (
+                <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Today's Reminders</h3>
+                    <span className="text-[10px] font-bold py-0.5 px-2 bg-blue-100 text-blue-700 rounded-full">{todayReminders.filter(r => !todayOpportunities.find(o => o.id === r.id)?.followUpRead).length} New</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto">
+                    {todayReminders.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <div className="w-12 h-12 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Bell size={24} className="text-gray-300" />
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">All caught up! No reminders for today.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                        {todayReminders.map((reminder) => {
+                          const isRead = todayOpportunities.find(o => o.id === reminder.id)?.followUpRead;
+
+                          return (
+                            <div
+                              key={`${reminder.type}-${reminder.id}`}
+                              className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group relative ${isRead ? 'opacity-50' : ''}`}
+                              onClick={() => {
+                                if (reminder.type === 'follow-up') {
+                                  navigate('/opportunities');
+                                } else {
+                                  navigate('/calendars');
+                                }
+                                setIsRemindersOpen(false);
+                              }}
+                            >
+                              <div className="flex gap-3 pr-8">
+                                <div className={`mt-1 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${reminder.type === 'follow-up' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                                  {reminder.type === 'follow-up' ? <Target size={16} /> : <CalendarDays size={16} />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start mb-0.5">
+                                    <p className={`text-sm font-bold text-gray-900 dark:text-white truncate pr-2 ${isRead ? 'line-through' : ''}`}>
+                                      {reminder.title}
+                                    </p>
+                                    <span className="text-[10px] text-gray-400 whitespace-nowrap flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                                      <Clock size={10} />
+                                      {reminder.time}
+                                    </span>
+                                  </div>
+                                  <p className={`text-xs text-gray-500 dark:text-gray-400 truncate ${isRead ? 'line-through' : ''}`}>
+                                    {reminder.description}
+                                  </p>
+                                </div>
+                              </div>
+                              {reminder.type === 'follow-up' && !isRead && (
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await updateOpportunity(reminder.id, { followUpRead: true });
+                                      // We keep it in the dropdown but update the local state for visual feedback
+                                      setTodayOpportunities(prev => prev.map(o => o.id === reminder.id ? { ...o, followUpRead: true } : o));
+                                      toast.dismiss(`opp-toast-${reminder.id}`);
+                                      toast.success('Marked as read', { position: 'bottom-center' });
+                                    } catch (error) {
+                                      console.error("Error marking as read:", error);
+                                    }
+                                  }}
+                                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-gray-100 rounded-full transition-all"
+                                  title="Mark as Read"
+                                >
+                                  <div className="w-5 h-5 border-2 border-current rounded-md flex items-center justify-center">
+                                    {/* Empty square as requested (remove tick) */}
+                                  </div>
+                                </button>
+                              )}
+                              {isRead && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-green-500">
+                                  <CheckSquare size={18} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="relative" ref={profileRef}>
               <div
