@@ -297,41 +297,41 @@ const Settings: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Cleanup Legacy Sources */}
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                {/* Clear All Opportunity Sources */}
+                                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                                     <div className="flex justify-between items-center">
                                         <div>
-                                            <h3 className="font-medium text-gray-900">Cleanup Legacy Sources</h3>
+                                            <h3 className="font-medium text-gray-900">Clear All Opportunity Sources</h3>
                                             <p className="text-sm text-gray-500 mt-1">
-                                                Clears the 'Source' field for all opportunities created before January 28th, 2026.
+                                                Clears the 'Source' field for ALL opportunities in the system. Use this if you want to completely reset lead origins.
                                             </p>
                                         </div>
                                         <button
                                             onClick={async () => {
-                                                if (!window.confirm('Are you sure you want to clear the Source field for all opportunities created before Jan 28th?')) {
+                                                if (!window.confirm('⚠️ Are you sure you want to clear the Source field for ALL opportunities? This action cannot be undone.')) {
                                                     return;
                                                 }
                                                 setIsCleaningSources(true);
                                                 try {
-                                                    const result = await cleanupLegacySources('2026-01-28');
+                                                    const result = await cleanupLegacySources(); // No date passed = clear all
                                                     toast.success(`Successfully cleared sources for ${result.updated} opportunities.`);
                                                 } catch (error) {
-                                                    toast.error('Failed to cleanup sources');
+                                                    toast.error('Failed to clear sources');
                                                 }
                                                 setIsCleaningSources(false);
                                             }}
                                             disabled={isCleaningSources}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
                                             {isCleaningSources ? (
                                                 <>
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                    Cleaning...
+                                                    Clearing...
                                                 </>
                                             ) : (
                                                 <>
                                                     <Trash2 size={16} />
-                                                    Cleanup Sources
+                                                    Clear All Sources
                                                 </>
                                             )}
                                         </button>

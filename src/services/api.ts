@@ -419,14 +419,19 @@ const firebaseApi = {
 
             return { removed: duplicateIds.length, kept: seen.size };
         },
-        cleanupLegacySources: async (cutoffDate: string) => {
+        cleanupLegacySources: async (cutoffDate?: string) => {
             const q = query(collection(db, 'opportunities'));
             const querySnapshot = await getDocs(q);
             const opportunities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
 
             const legacyOpps = opportunities.filter(opp => {
-                if (!opp.createdAt) return false;
-                return opp.createdAt < cutoffDate && opp.source !== '';
+                if (!opp.source) return false;
+                // If cutoffDate is provided, only clear if created before that date
+                if (cutoffDate) {
+                    return opp.createdAt ? opp.createdAt < cutoffDate : false;
+                }
+                // If no cutoffDate, clear ALL sources
+                return true;
             });
 
             if (legacyOpps.length > 0) {

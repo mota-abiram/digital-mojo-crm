@@ -77,7 +77,7 @@ interface AppState {
     // Data Cleanup
     removeDuplicateContacts: () => Promise<{ removed: number; kept: number }>;
     removeDuplicateOpportunities: () => Promise<{ removed: number; kept: number }>;
-    cleanupLegacySources: (cutoffDate: string) => Promise<{ updated: number }>;
+    cleanupLegacySources: (cutoffDate?: string) => Promise<{ updated: number }>;
 
     // Google Integration
     googleToken: string | null;
