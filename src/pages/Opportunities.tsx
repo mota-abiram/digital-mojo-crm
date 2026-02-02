@@ -106,6 +106,13 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                         </span>
                     </div>
 
+                    {item.source && (
+                        <div className="flex text-xs">
+                            <span className="text-gray-500 w-32 shrink-0">Source:</span>
+                            <span className="text-gray-700 font-medium truncate">{item.source}</span>
+                        </div>
+                    )}
+
                     <div className="flex text-xs">
                         <span className="text-gray-500 w-32 shrink-0">Stage:</span>
                         <span className="text-gray-700 font-medium truncate">
@@ -375,7 +382,8 @@ const Opportunities: React.FC = () => {
                 opp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 opp.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 opp.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                opp.contactPhone?.includes(searchTerm);
+                opp.contactPhone?.includes(searchTerm) ||
+                opp.source?.toLowerCase().includes(searchTerm.toLowerCase());
 
             // Advanced Filters
             const matchesStage = filters.stage ? opp.stage === filters.stage : true;
@@ -1171,6 +1179,7 @@ const Opportunities: React.FC = () => {
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Phone</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Notes</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Next Follow up Date</th>
+                                        <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Source</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Stage</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Value</th>
                                         <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">Email</th>
@@ -1226,6 +1235,9 @@ const Opportunities: React.FC = () => {
                                             </td>
                                             <td className="p-4 text-sm text-gray-600">
                                                 {opp.followUpDate ? format(new Date(opp.followUpDate), 'MMM d, yyyy') : '-'}
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-600">
+                                                {opp.source || '-'}
                                             </td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium border border-gray-200">
