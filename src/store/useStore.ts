@@ -77,6 +77,7 @@ interface AppState {
     // Data Cleanup
     removeDuplicateContacts: () => Promise<{ removed: number; kept: number }>;
     removeDuplicateOpportunities: () => Promise<{ removed: number; kept: number }>;
+    cleanupLegacySources: (cutoffDate: string) => Promise<{ updated: number }>;
 
     // Google Integration
     googleToken: string | null;
@@ -301,6 +302,12 @@ export const useStore = create<AppState>((set, get) => ({
         // Refresh opportunities and counts after cleanup
         get().fetchOpportunities();
         get().fetchStageCounts();
+        return result;
+    },
+    cleanupLegacySources: async (cutoffDate: string) => {
+        const result = await api.opportunities.cleanupLegacySources(cutoffDate);
+        // Refresh opportunities after cleanup
+        get().fetchOpportunities();
         return result;
     },
 

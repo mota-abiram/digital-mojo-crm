@@ -327,6 +327,27 @@ export const mockApi = {
       }
 
       return { removed: duplicateIds.length, kept: seen.size };
+    },
+    cleanupLegacySources: async (cutoffDate: string) => {
+      await delay(500);
+      const opportunities = getStoredData<Opportunity>('demo_opportunities', []);
+
+      const updatedOpps = opportunities.map(opp => {
+        if (opp.createdAt && opp.createdAt < cutoffDate && opp.source !== '') {
+          return { ...opp, source: '' };
+        }
+        return opp;
+      });
+
+      const updatedCount = opportunities.filter(opp =>
+        opp.createdAt && opp.createdAt < cutoffDate && opp.source !== ''
+      ).length;
+
+      if (updatedCount > 0) {
+        saveStoredData('demo_opportunities', updatedOpps);
+      }
+
+      return { updated: updatedCount };
     }
   },
   appointments: {

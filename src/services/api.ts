@@ -418,6 +418,23 @@ const firebaseApi = {
             }
 
             return { removed: duplicateIds.length, kept: seen.size };
+        },
+        cleanupLegacySources: async (cutoffDate: string) => {
+            const q = query(collection(db, 'opportunities'));
+            const querySnapshot = await getDocs(q);
+            const opportunities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Opportunity));
+
+            const legacyOpps = opportunities.filter(opp => {
+                if (!opp.createdAt) return false;
+                return opp.createdAt < cutoffDate && opp.source !== '';
+            });
+
+            if (legacyOpps.length > 0) {
+                const promises = legacyOpps.map(opp => updateDoc(doc(db, 'opportunities', opp.id), { source: '' }));
+                await Promise.all(promises);
+            }
+
+            return { updated: legacyOpps.length };
         }
     },
     appointments: {

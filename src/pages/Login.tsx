@@ -31,7 +31,7 @@ const Login: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Skip authentication in demo mode
         if (isDemoMode()) {
             setCurrentUser({
@@ -43,7 +43,7 @@ const Login: React.FC = () => {
             navigate('/dashboard');
             return;
         }
-        
+
         if (!email || !password) {
             toast.error('Please enter both email and password');
             return;
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
             navigate('/dashboard');
             return;
         }
-        
+
         try {
             const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/calendar.events');
