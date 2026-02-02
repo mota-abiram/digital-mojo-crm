@@ -490,7 +490,7 @@ const Opportunities: React.FC = () => {
                 value: oppValue,
                 stage: opp.stage || '16',
                 status: opp.status || 'Open',
-                source: opp.source || 'Website Form',
+                source: opp.source || '',
                 contactName: linkedContact?.name || opp.contactName || '',
                 contactEmail: linkedContact?.email || opp.contactEmail || '',
                 contactPhone: linkedContact?.phone || opp.contactPhone || '',
@@ -584,7 +584,7 @@ const Opportunities: React.FC = () => {
             name: formData.name || 'Website Lead',
             value: Number(formData.value) || 0,
             stage: formData.stage || '16', // Always fallback to 'Yet to contact'
-            source: formData.source || 'Website Form',
+            source: formData.source || '',
             contactName: formData.contactName || '',
             contactEmail: formData.contactEmail || '',
             contactPhone: formData.contactPhone || '',
