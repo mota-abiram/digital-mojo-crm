@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
 import { useStore } from './store/useStore';
-import { Toaster } from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Toaster, toast, useToasterStore } from 'react-hot-toast';
+import { Loader2, X } from 'lucide-react';
 import ReminderManager from './components/ReminderManager';
 
 // Pages
@@ -31,6 +31,28 @@ const PrivateRoute = () => {
   return currentUser ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
+const ToastDismissAll: React.FC = () => {
+  const { toasts } = useToasterStore();
+  // Only show if there are follow-up toasts (they have IDs starting with 'opp-toast-')
+  const hasFollowUpToasts = toasts.some(t => t.id.startsWith('opp-toast-'));
+
+  if (!hasFollowUpToasts) return null;
+
+  return (
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[1000] animate-in fade-in slide-in-from-bottom-8 duration-300">
+      <button
+        onClick={() => toast.dismiss()}
+        className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-full shadow-2xl hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all flex items-center gap-2.5 text-sm font-bold ring-4 ring-black/5 group"
+      >
+        <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded-full group-hover:bg-red-500 group-hover:text-white transition-colors">
+          <X size={14} strokeWidth={3} />
+        </div>
+        Clear All Notifications
+      </button>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const { fetchNotifications, initializeListeners, initializeAuthListener } = useStore();
 
@@ -43,6 +65,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <Toaster position="top-right" />
+      <ToastDismissAll />
       <ReminderManager />
       <Routes>
         <Route path="/login" element={<Login />} />
