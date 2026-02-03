@@ -603,13 +603,13 @@ const Opportunities: React.FC = () => {
 
         try {
             if (editingId) {
-                console.log("Saving Update to Lead:", editingId);
+                console.log("Saving Update to Opportunity:", editingId);
                 await updateOpportunity(editingId, oppData);
-                toast.success('Lead updated successfully');
+                toast.success('Opportunity updated successfully');
             } else {
                 oppData.createdAt = new Date().toISOString();
                 await addOpportunity(oppData);
-                toast.success('New lead created');
+                toast.success('New opportunity created');
             }
             setIsModalOpen(false);
         } catch (error: any) {
@@ -961,7 +961,7 @@ const Opportunities: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col gap-4 mb-4 md:mb-6 shrink-0">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl md:text-3xl font-bold text-gray-900">Leads</h1>
+                    <h1 className="text-xl md:text-3xl font-bold text-gray-900">Opportunities</h1>
                     <div className="flex gap-2 md:gap-3">
                         <div className="hidden md:flex bg-white border border-gray-300 rounded-lg p-1">
                             <button
@@ -1139,98 +1139,38 @@ const Opportunities: React.FC = () => {
             <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
                 {viewMode === 'board' ? (
                     <DndContext onDragEnd={handleDragEnd}>
-                        <div className="h-full overflow-x-auto overflow-y-hidden md:custom-scrollbar pb-4">
-                            {/* Desktop Board View */}
-                            <div className="hidden md:flex h-full gap-4 min-w-max px-1">
-                                {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => (
-                                    <DroppableColumn
-                                        key={stage.id}
-                                        stage={stage}
-                                        items={visibleOpportunities.filter(o => o.stage === stage.id)}
-                                        onEdit={handleOpenModal}
-                                        onDelete={handleDelete}
-                                        hasMore={stagePagination[stage.id]?.hasMore ?? true}
-                                        onLoadMore={() => loadMoreByStage(stage.id)}
-                                        isLoading={stagePagination[stage.id]?.isLoading ?? false}
-                                        totalCount={stageCounts[stage.id]?.count || 0}
-                                        totalValue={stageCounts[stage.id]?.value || 0}
-                                        appointments={appointments}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Mobile Vertical View */}
-                            <div className="md:hidden h-full overflow-y-auto space-y-6 pb-20">
+                        <div className="h-full overflow-x-auto overflow-y-hidden md:custom-scrollbar pb-4 md:px-1 snap-x snap-mandatory scroll-smooth">
+                            {/* Desktop/Tablet Board View & Mobile Slider */}
+                            <div className="flex h-full gap-4 min-w-max md:px-1">
                                 {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => {
                                     const stageOpps = visibleOpportunities.filter(o => o.stage === stage.id);
-                                    if (stageOpps.length === 0) return null;
 
                                     return (
-                                        <div key={stage.id} className="space-y-3">
-                                            <div className="flex items-center gap-2 sticky top-0 bg-gray-50/95 backdrop-blur-sm py-2 z-10 transition-all border-b border-gray-200">
-                                                <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: stage.color }}></div>
-                                                <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">{stage.title}</h3>
-                                                <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{stageOpps.length}</span>
-                                            </div>
-                                            <div className="space-y-3">
-                                                {stageOpps.map(item => (
-                                                    <div
-                                                        key={item.id}
-                                                        onClick={() => handleOpenModal(item)}
-                                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 active:scale-[0.98] transition-transform"
-                                                    >
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <h4 className="font-bold text-gray-900 leading-tight">{item.name}</h4>
-                                                            <span className="text-sm font-bold text-brand-orange">₹{Number(item.value).toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                                                            <User size={12} /> {item.contactName || 'No Contact'}
-                                                            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-                                                            <Calendar size={12} /> {item.followUpDate ? format(new Date(item.followUpDate), 'MMM d') : 'No Date'}
-                                                        </div>
-                                                        {item.notes && item.notes.length > 0 && (
-                                                            <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg italic line-clamp-2">
-                                                                "{[...item.notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].content}"
-                                                            </p>
-                                                        )}
-                                                        <div className="mt-3 flex gap-2">
-                                                            {item.contactPhone && (
-                                                                <a
-                                                                    href={`tel:${item.contactPhone}`}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-green-100"
-                                                                >
-                                                                    <Phone size={14} /> Call
-                                                                </a>
-                                                            )}
-                                                            <button
-                                                                className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-blue-100"
-                                                            >
-                                                                <Edit2 size={14} /> Details
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                        <div key={stage.id} className="w-[85vw] md:w-80 snap-center md:snap-align-none shrink-0 h-full">
+                                            <DroppableColumn
+                                                stage={stage}
+                                                items={stageOpps}
+                                                onEdit={handleOpenModal}
+                                                onDelete={handleDelete}
+                                                hasMore={stagePagination[stage.id]?.hasMore ?? true}
+                                                onLoadMore={() => loadMoreByStage(stage.id)}
+                                                isLoading={stagePagination[stage.id]?.isLoading ?? false}
+                                                totalCount={stageCounts[stage.id]?.count || 0}
+                                                totalValue={stageCounts[stage.id]?.value || 0}
+                                                appointments={appointments}
+                                            />
                                         </div>
                                     );
                                 })}
-                                {!visibleOpportunities.length && (
-                                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <Target size={32} className="text-gray-300" />
-                                        </div>
-                                        <p className="text-gray-500 font-medium">No opportunities found</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </DndContext>
                 ) : (
                     // List View
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
+                    <div className="bg-white md:border border-gray-200 rounded-lg md:shadow-sm overflow-hidden flex flex-col h-full bg-gray-50/30 md:bg-white">
                         <div ref={listScrollContainerRef} className="overflow-auto flex-1">
-                            <table className="w-full text-sm text-left text-gray-500">
+                            {/* Desktop Table View */}
+                            <table className="hidden md:table w-full text-sm text-left text-gray-500">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th className="p-4 w-4">
@@ -1344,6 +1284,47 @@ const Opportunities: React.FC = () => {
                                     </tr>
                                 </tbody>
                             </table>
+
+                            {/* Mobile Card List View */}
+                            <div className="md:hidden flex flex-col gap-4 p-1 pb-24">
+                                {visibleOpportunities.map((opp) => (
+                                    <div
+                                        key={opp.id}
+                                        onClick={() => handleOpenModal(opp)}
+                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 active:scale-[0.98] transition-transform"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 leading-tight">{opp.companyName || opp.name}</h4>
+                                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                    <Tag size={12} /> {stages.find(s => s.id === opp.stage)?.title || opp.stage}
+                                                </p>
+                                            </div>
+                                            <span className="text-sm font-bold text-brand-orange">₹{Number(opp.value).toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-50">
+                                            <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                                                <User size={12} className="text-gray-400" /> {opp.contactName || 'No contact'}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                                                <Calendar size={12} className="text-gray-400" /> {opp.followUpDate ? format(new Date(opp.followUpDate), 'MMM d') : 'No follow-up'}
+                                            </div>
+                                            {opp.status && (
+                                                <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${opp.status === 'Won' ? 'bg-green-100 text-green-700' :
+                                                    opp.status === 'Lost' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                    {opp.status}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isLoading && hasMoreOpportunities && (
+                                    <div className="flex justify-center py-4" ref={listLoadMoreRef}>
+                                        <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center text-sm text-gray-500">
                             <span>Showing {visibleOpportunities.length} opportunities {hasMoreOpportunities && '(scroll for more)'}</span>
@@ -1366,7 +1347,7 @@ const Opportunities: React.FC = () => {
                             {/* Modal Header */}
                             <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-200 bg-white shrink-0">
                                 <h2 className="text-lg md:text-xl font-bold text-gray-900">
-                                    {editingId ? `Edit ${formData.name}` : 'New Lead'}
+                                    {editingId ? `Edit ${formData.name}` : 'New Opportunity'}
                                 </h2>
                                 <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
                                     <X size={24} />

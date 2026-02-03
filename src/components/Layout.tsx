@@ -110,7 +110,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/calendars', icon: CalendarDays, label: 'Calendars' },
-    { path: '/opportunities', icon: Target, label: 'Leads' },
+    { path: '/opportunities', icon: Target, label: 'Opportunities' },
     { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
@@ -370,7 +370,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   )}
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">
-                  {item.label === 'Opportunities' ? 'Leads' : item.label}
+                  {item.label}
                 </span>
               </Link>
             );

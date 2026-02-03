@@ -223,7 +223,7 @@ const Tasks: React.FC = () => {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
                 <div>
                     <h1 className="text-xl md:text-3xl font-bold text-gray-900">Task List</h1>
-                    <p className="hidden md:block text-gray-500 mt-1">Manage your daily to-dos across all leads</p>
+                    <p className="hidden md:block text-gray-500 mt-1">Manage your daily to-dos across all opportunities</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
