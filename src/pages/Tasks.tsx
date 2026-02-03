@@ -219,21 +219,21 @@ const Tasks: React.FC = () => {
     }
 
     return (
-        <div className="p-8 h-full flex flex-col bg-gray-50/50">
-            <div className="flex justify-between items-center mb-8">
+        <div className="p-4 md:p-8 h-full flex flex-col bg-gray-50/50">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
-                    <p className="text-gray-500 mt-1">Manage your daily to-dos across all opportunities</p>
+                    <h1 className="text-xl md:text-3xl font-bold text-gray-900">Task List</h1>
+                    <p className="hidden md:block text-gray-500 mt-1">Manage your daily to-dos across all leads</p>
                 </div>
-                <div className="flex gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
                         <input
                             type="text"
                             placeholder="Search tasks..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary w-64"
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary md:w-64"
                         />
                     </div>
                     <div className="flex bg-white border border-gray-200 rounded-lg p-1">
@@ -241,11 +241,11 @@ const Tasks: React.FC = () => {
                             <button
                                 key={v}
                                 onClick={() => setViewScope(v)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-colors flex items-center gap-2 ${viewScope === v ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
+                                className={`flex-1 sm:flex-none px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-medium capitalize transition-colors flex items-center justify-center gap-2 ${viewScope === v ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
-                                {v === 'my' ? 'My Tasks' : 'All Tasks'}
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${viewScope === v ? 'bg-white/20' : 'bg-gray-100'}`}>
+                                {v === 'my' ? 'Mine' : 'All'}
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${viewScope === v ? 'bg-white/20' : 'bg-gray-100'}`}>
                                     {v === 'my' ? myTasksCount : allTasksCount}
                                 </span>
                             </button>

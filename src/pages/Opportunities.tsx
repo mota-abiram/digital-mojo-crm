@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Papa from 'papaparse';
-import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown, Calendar, Edit2 } from 'lucide-react';
+import { Plus, MoreHorizontal, X, Trash2, LayoutGrid, List as ListIcon, Search, Filter, Download, ChevronDown, User, Phone, Mail, Tag, CheckSquare, MessageSquare, Clock, ArrowUpDown, Calendar, Edit2, Target } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Modal } from '../components/Modal';
@@ -957,13 +957,13 @@ const Opportunities: React.FC = () => {
     };
 
     return (
-        <div className="p-8 h-full flex flex-col bg-gray-50">
+        <div className="p-4 md:p-8 h-full flex flex-col bg-gray-50/50">
             {/* Header */}
-            <div className="flex flex-col gap-4 mb-6 shrink-0">
+            <div className="flex flex-col gap-4 mb-4 md:mb-6 shrink-0">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Opportunities</h1>
-                    <div className="flex gap-3">
-                        <div className="bg-white border border-gray-300 rounded-lg p-1 flex">
+                    <h1 className="text-xl md:text-3xl font-bold text-gray-900">Leads</h1>
+                    <div className="flex gap-2 md:gap-3">
+                        <div className="hidden md:flex bg-white border border-gray-300 rounded-lg p-1">
                             <button
                                 onClick={() => setViewMode('board')}
                                 className={`p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
@@ -981,13 +981,13 @@ const Opportunities: React.FC = () => {
                         </div>
                         <button
                             onClick={() => setIsPipelineModalOpen(true)}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
+                            className="hidden md:block px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
                         >
                             Pipelines
                         </button>
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
+                            className="hidden md:block px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
                         >
                             Import
                         </button>
@@ -1000,15 +1000,15 @@ const Opportunities: React.FC = () => {
                         />
                         <button
                             onClick={handleExport}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2"
+                            className="hidden md:flex px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm items-center gap-2"
                         >
                             <Download size={16} /> Export
                         </button>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-bold hover:bg-brand-blue/90 shadow-sm flex items-center gap-2"
+                            className="px-3 md:px-4 py-2 bg-brand-orange text-white rounded-lg text-sm font-bold hover:bg-brand-orange/90 shadow-sm flex items-center gap-2"
                         >
-                            <Plus size={16} /> Add Opportunity
+                            <Plus size={18} /> <span className="hidden md:inline">Add Opportunity</span><span className="md:hidden">Add</span>
                         </button>
                     </div>
                 </div>
@@ -1136,11 +1136,12 @@ const Opportunities: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
                 {viewMode === 'board' ? (
                     <DndContext onDragEnd={handleDragEnd}>
-                        <div className="h-full overflow-x-auto overflow-y-hidden custom-scrollbar pb-4">
-                            <div className="flex h-full gap-4 min-w-max px-1">
+                        <div className="h-full overflow-x-auto overflow-y-hidden md:custom-scrollbar pb-4">
+                            {/* Desktop Board View */}
+                            <div className="hidden md:flex h-full gap-4 min-w-max px-1">
                                 {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => (
                                     <DroppableColumn
                                         key={stage.id}
@@ -1156,6 +1157,72 @@ const Opportunities: React.FC = () => {
                                         appointments={appointments}
                                     />
                                 ))}
+                            </div>
+
+                            {/* Mobile Vertical View */}
+                            <div className="md:hidden h-full overflow-y-auto space-y-6 pb-20">
+                                {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => {
+                                    const stageOpps = visibleOpportunities.filter(o => o.stage === stage.id);
+                                    if (stageOpps.length === 0) return null;
+
+                                    return (
+                                        <div key={stage.id} className="space-y-3">
+                                            <div className="flex items-center gap-2 sticky top-0 bg-gray-50/95 backdrop-blur-sm py-2 z-10 transition-all border-b border-gray-200">
+                                                <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: stage.color }}></div>
+                                                <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">{stage.title}</h3>
+                                                <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{stageOpps.length}</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {stageOpps.map(item => (
+                                                    <div
+                                                        key={item.id}
+                                                        onClick={() => handleOpenModal(item)}
+                                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 active:scale-[0.98] transition-transform"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <h4 className="font-bold text-gray-900 leading-tight">{item.name}</h4>
+                                                            <span className="text-sm font-bold text-brand-orange">₹{Number(item.value).toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                                                            <User size={12} /> {item.contactName || 'No Contact'}
+                                                            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+                                                            <Calendar size={12} /> {item.followUpDate ? format(new Date(item.followUpDate), 'MMM d') : 'No Date'}
+                                                        </div>
+                                                        {item.notes && item.notes.length > 0 && (
+                                                            <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg italic line-clamp-2">
+                                                                "{[...item.notes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].content}"
+                                                            </p>
+                                                        )}
+                                                        <div className="mt-3 flex gap-2">
+                                                            {item.contactPhone && (
+                                                                <a
+                                                                    href={`tel:${item.contactPhone}`}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-green-100"
+                                                                >
+                                                                    <Phone size={14} /> Call
+                                                                </a>
+                                                            )}
+                                                            <button
+                                                                className="flex-1 bg-blue-50 text-blue-700 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-blue-100"
+                                                            >
+                                                                <Edit2 size={14} /> Details
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {!visibleOpportunities.length && (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                            <Target size={32} className="text-gray-300" />
+                                        </div>
+                                        <p className="text-gray-500 font-medium">No opportunities found</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </DndContext>
@@ -1294,41 +1361,45 @@ const Opportunities: React.FC = () => {
             {/* Enhanced Opportunity Modal */}
             {
                 isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                        <div className="bg-white w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                        <div className="bg-white w-full h-full md:max-w-6xl md:h-[90vh] md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
-                                <h2 className="text-xl font-bold text-gray-900">
-                                    {editingId ? `Edit "${formData.name}"` : 'New Opportunity'}
+                            <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-200 bg-white shrink-0">
+                                <h2 className="text-lg md:text-xl font-bold text-gray-900">
+                                    {editingId ? `Edit ${formData.name}` : 'New Lead'}
                                 </h2>
-                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
                                     <X size={24} />
                                 </button>
                             </div>
 
-                            <div className="flex flex-1 overflow-hidden">
-                                {/* Sidebar Tabs */}
-                                <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col overflow-y-auto">
-                                    {['Opportunity Details', 'Book/Update Appointment', 'Tasks', 'Notes'].map((tab) => {
-                                        const id = tab.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                                {/* Sidebar Tabs / Top Tabs on Mobile */}
+                                <div className="w-full md:w-64 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 flex md:flex-col overflow-x-auto md:overflow-y-auto shrink-0 no-scrollbar">
+                                    {[
+                                        { label: 'Details', id: 'details' },
+                                        { label: 'Booking', id: 'book-update-appointment' },
+                                        { label: 'Tasks', id: 'tasks' },
+                                        { label: 'Notes', id: 'notes' }
+                                    ].map((tab) => {
                                         return (
                                             <button
-                                                key={id}
-                                                onClick={() => setActiveTab(id)}
-                                                className={`px-6 py-4 text-left text-sm font-medium border-l-4 transition-colors ${activeTab === id || (id === 'opportunity-details' && activeTab === 'details')
+                                                key={tab.id}
+                                                onClick={() => setActiveTab(tab.id)}
+                                                className={`px-4 md:px-6 py-3 md:py-4 text-left text-xs md:text-sm font-bold whitespace-nowrap border-b-2 md:border-b-0 md:border-l-4 transition-colors ${activeTab === tab.id || (tab.id === 'details' && activeTab === 'opportunity-details')
                                                     ? 'bg-blue-50 border-brand-blue text-brand-blue'
-                                                    : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                                    : 'border-transparent text-gray-600 hover:bg-gray-100'
                                                     }`}
                                             >
-                                                {tab}
+                                                {tab.label}
                                             </button>
                                         );
                                     })}
                                 </div>
 
                                 {/* Main Content Area */}
-                                <div className="flex-1 overflow-y-auto p-8 bg-white">
-                                    <div className="max-w-4xl mx-auto space-y-8">
+                                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white">
+                                    <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 pb-10">
                                         {/* DETAILS TAB */}
                                         {(activeTab === 'details' || activeTab === 'opportunity-details') && (
                                             <>
@@ -1339,7 +1410,7 @@ const Opportunities: React.FC = () => {
                                                             Contact details <User size={18} className="text-gray-400" />
                                                         </h3>
                                                     </div>
-                                                    <div className="space-y-6">
+                                                    <div className="space-y-4 md:space-y-6">
                                                         <div className="relative">
                                                             <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                             <input
@@ -1350,7 +1421,7 @@ const Opportunities: React.FC = () => {
                                                                 className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                             />
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-6">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                                             <div className="relative">
                                                                 <Mail className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                                                                 <input
@@ -1372,7 +1443,7 @@ const Opportunities: React.FC = () => {
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-6">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                                             <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Contact Value</label>
                                                                 <select
@@ -1415,7 +1486,7 @@ const Opportunities: React.FC = () => {
                                                             />
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-6">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                                             <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Stage</label>
                                                                 <select
@@ -1428,7 +1499,7 @@ const Opportunities: React.FC = () => {
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-6">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                                                             <div>
                                                                 <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Value</label>
                                                                 <div className="relative">

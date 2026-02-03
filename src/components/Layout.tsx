@@ -110,7 +110,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/calendars', icon: CalendarDays, label: 'Calendars' },
-    { path: '/opportunities', icon: Target, label: 'Opportunities' },
+    { path: '/opportunities', icon: Target, label: 'Leads' },
     { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
@@ -343,9 +343,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark transition-colors duration-200">
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark transition-colors duration-200 pb-20 md:pb-0">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 h-16 flex items-center justify-around px-2 z-50 pb-safe">
+          {navItems.filter(item => item.label !== 'Calendars').map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${isActive
+                  ? 'text-brand-orange'
+                  : 'text-gray-500 dark:text-gray-400'
+                  }`}
+              >
+                <div className="relative">
+                  <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                  {item.path === '/tasks' && pendingTasksCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[14px] h-3.5 flex items-center justify-center">
+                      {pendingTasksCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider">
+                  {item.label === 'Opportunities' ? 'Leads' : item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
       <CommandPalette />
     </div>

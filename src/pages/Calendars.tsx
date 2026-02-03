@@ -384,33 +384,33 @@ const Calendars: React.FC = () => {
     };
 
     return (
-        <div className="p-8 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Calendars</h1>
-                <div className="flex gap-2">
+        <div className="p-4 md:p-8 h-full flex flex-col bg-gray-50/50 overflow-y-auto">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900">Calendars</h1>
+                <div className="flex flex-wrap gap-2">
                     <button
                         onClick={handleSyncGoogleCalendar}
-                        className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm"
+                        className="flex-1 md:flex-none bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-sm"
                     >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 0.307 5.387 0 12s5.56 12 12.48 12c3.6 0 6.347-1.173 8.547-3.413C23.213 18.107 24 15.4 24 12.853c0-.853-.093-1.707-.267-2.56h-11.253z" /></svg>
-                        Sync Google Calendar
+                        <span className="hidden sm:inline">Sync Google</span><span className="sm:hidden">Sync</span>
                     </button>
-                    <div className="bg-gray-200 rounded-lg p-1 flex text-sm font-medium">
-                        <button className="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900">Calendars</button>
-                        <button className="px-3 py-1.5 rounded-md bg-white shadow text-gray-900">Appointments</button>
-                    </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="bg-primary hover:bg-primary/90 text-black px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                        className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-black px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
                     >
-                        <Plus size={18} /> New Appointment
+                        <Plus size={18} /> New <span className="hidden sm:inline">Appointment</span>
                     </button>
+                    <div className="hidden sm:flex bg-gray-200 rounded-lg p-1 text-xs font-bold">
+                        <button className="px-3 py-1.5 rounded-md text-gray-600">Calendars</button>
+                        <button className="px-3 py-1.5 rounded-md bg-white shadow text-gray-900">Appointments</button>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex gap-6 flex-1 min-h-0">
-                {/* Mini Calendar & Filters */}
-                <div className="w-72 flex-shrink-0 flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+                {/* Mini Calendar & Filters - Hidden on mobile */}
+                <div className="hidden lg:flex w-72 flex-shrink-0 flex-col gap-6">
                     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
                         <div className="flex justify-between items-center mb-4">
                             <span className="font-bold text-gray-800">{format(currentDate, 'MMMM yyyy')}</span>

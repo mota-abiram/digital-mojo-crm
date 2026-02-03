@@ -115,44 +115,44 @@ const Settings: React.FC = () => {
     };
 
     return (
-        <div className="p-8 h-full flex flex-col bg-gray-50/50">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <div className="p-4 md:p-8 h-full flex flex-col bg-gray-50/50 overflow-y-auto">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900">Settings</h1>
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-primary text-black px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all">
+                    className="flex items-center justify-center gap-2 bg-primary text-black px-6 py-2.5 rounded-lg font-bold hover:bg-primary/90 shadow-sm transition-all text-sm">
                     <Save size={18} />
                     Save Changes
                 </button>
             </div>
 
-            <div className="flex gap-8 flex-1 min-h-0">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8 flex-1 min-h-0">
                 {/* Sidebar */}
-                <div className="w-64 flex-shrink-0">
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="w-full md:w-64 flex-shrink-0">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex md:flex-col">
                         <button
                             onClick={() => setActiveTab('pipelines')}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'pipelines'
+                            className={`flex-1 md:flex-none text-center md:text-left px-4 py-3 text-xs md:text-sm font-bold border-b-2 md:border-b-0 md:border-l-4 transition-colors ${activeTab === 'pipelines'
                                 ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
-                            Pipeline Settings
+                            Pipelines
                         </button>
                         <button
                             onClick={() => setActiveTab('cleanup')}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium border-l-4 transition-colors ${activeTab === 'cleanup'
+                            className={`flex-1 md:flex-none text-center md:text-left px-4 py-3 text-xs md:text-sm font-bold border-b-2 md:border-b-0 md:border-l-4 transition-colors ${activeTab === 'cleanup'
                                 ? 'border-primary bg-primary/5 text-black'
                                 : 'border-transparent text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
-                            Data Cleanup
+                            Cleanup
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm p-6 overflow-y-auto">
+                <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6 overflow-y-auto mb-20 md:mb-0">
                     {activeTab === 'pipelines' && (
                         <div className="max-w-2xl">
                             <div className="flex justify-between items-center mb-6">

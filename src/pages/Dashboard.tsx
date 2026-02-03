@@ -61,9 +61,9 @@ const Dashboard: React.FC = () => {
   const taskColors = ['#1ea34f', '#eb7311'];
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50/50 h-full overflow-y-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex gap-2">
           <select
             value={timeRange}
