@@ -6,6 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Digital Mojo CRM</title>
   <link rel="icon" type="image/png" href="/dm.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#eb7311" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Digital Mojo CRM" />
+  <link rel="apple-touch-icon" href="/dm.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +82,15 @@
 <body class="bg-background-light text-gray-800 antialiased">
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✅ CRM Mobile: Service Worker Registered'))
+          .catch(err => console.log('❌ CRM Mobile: Service Worker Failed', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

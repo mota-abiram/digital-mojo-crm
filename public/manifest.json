@@ -1,0 +1,23 @@
+{
+    "name": "Digital Mojo CRM",
+    "short_name": "DM CRM",
+    "description": "Premium CRM for Lead and Opportunity Management",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f5f8f8",
+    "theme_color": "#eb7311",
+    "icons": [
+        {
+            "src": "/dm.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/dm.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
