@@ -963,7 +963,7 @@ const Opportunities: React.FC = () => {
                 <div className="flex justify-between items-center">
                     <h1 className="text-xl md:text-3xl font-bold text-gray-900">Opportunities</h1>
                     <div className="flex gap-2 md:gap-3">
-                        <div className="hidden md:flex bg-white border border-gray-300 rounded-lg p-1">
+                        <div className="flex bg-white border border-gray-300 rounded-lg p-1">
                             <button
                                 onClick={() => setViewMode('board')}
                                 className={`p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
