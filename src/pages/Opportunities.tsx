@@ -963,22 +963,6 @@ const Opportunities: React.FC = () => {
                 <div className="flex justify-between items-center">
                     <h1 className="text-xl md:text-3xl font-bold text-gray-900">Opportunities</h1>
                     <div className="flex gap-2 md:gap-3">
-                        <div className="flex bg-white border border-gray-300 rounded-lg p-1">
-                            <button
-                                onClick={() => setViewMode('board')}
-                                className={`p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
-                                title="Board View"
-                            >
-                                <LayoutGrid size={20} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
-                                title="List View"
-                            >
-                                <ListIcon size={20} />
-                            </button>
-                        </div>
                         <button
                             onClick={() => setIsPipelineModalOpen(true)}
                             className="hidden md:block px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm"
@@ -1035,8 +1019,8 @@ const Opportunities: React.FC = () => {
                 )}
 
                 {/* Filters Bar */}
-                <div className="flex gap-4 items-center relative">
-                    <div className="relative flex-1 max-w-md">
+                <div className="flex flex-wrap md:flex-nowrap gap-2 md:gap-4 items-center relative">
+                    <div className="relative flex-1 min-w-[200px] md:max-w-md">
                         <Search className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
                         <input
                             type="text"
@@ -1045,6 +1029,22 @@ const Opportunities: React.FC = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
                         />
+                    </div>
+                    <div className="flex bg-white border border-gray-300 rounded-lg p-1 shrink-0 shadow-sm">
+                        <button
+                            onClick={() => setViewMode('board')}
+                            className={`p-1.5 md:p-2 rounded ${viewMode === 'board' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
+                            title="Board View"
+                        >
+                            <LayoutGrid size={18} className="md:w-5 md:h-5" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 md:p-2 rounded ${viewMode === 'list' ? 'bg-gray-100 text-brand-blue' : 'text-gray-500 hover:text-gray-700'}`}
+                            title="List View"
+                        >
+                            <ListIcon size={18} className="md:w-5 md:h-5" />
+                        </button>
                     </div>
                     <div className="relative" ref={sortRef}>
                         <button
