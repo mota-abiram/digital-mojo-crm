@@ -1342,16 +1342,25 @@ const Opportunities: React.FC = () => {
             {/* Enhanced Opportunity Modal */}
             {
                 isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
                         <div className="bg-white w-full h-full md:max-w-6xl md:h-[90vh] md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
                             {/* Modal Header */}
                             <div className="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-200 bg-white shrink-0">
                                 <h2 className="text-lg md:text-xl font-bold text-gray-900">
                                     {editingId ? `Edit ${formData.name}` : 'New Opportunity'}
                                 </h2>
-                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
-                                    <X size={24} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
+                                        className="md:hidden px-4 py-2 bg-brand-orange text-white rounded-lg text-sm font-bold hover:bg-brand-orange/90 shadow-sm disabled:opacity-50"
+                                    >
+                                        {isSubmitting ? '...' : (editingId ? 'Update' : 'Create')}
+                                    </button>
+                                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                                        <X size={24} />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
@@ -2086,7 +2095,7 @@ const Opportunities: React.FC = () => {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
                                 <div className="text-xs text-gray-500">
                                     {editingId && (
                                         <>
