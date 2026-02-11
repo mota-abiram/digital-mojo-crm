@@ -50,6 +50,18 @@ const statuses: ('Open' | 'Won' | 'Lost' | 'Abandoned')[] = ['Open', 'Won', 'Los
 
 const tags = ['Hot Lead', 'VIP', 'Follow Up', 'New Client', 'Renewal', 'Enterprise', 'SMB'];
 
+export const DEFAULT_STAGES = [
+  { id: '16', title: '16 - Yet to contact', color: '#f0bc00' },
+  { id: '21', title: '21 - Cheque Ready', color: '#1ea34f' },
+  { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },
+  { id: '20', title: '20 - Hot', color: '#eb7311' },
+  { id: '19', title: '19 - Warm', color: '#eb7311' },
+  { id: '18', title: '18 - Luke Warm', color: '#eb7311' },
+  { id: '17', title: '17 - Follow Later', color: '#754c9b' },
+  { id: '10', title: '10 - Closed', color: '#1ea34f' },
+  { id: '0', title: '0 - Junk', color: '#808080' },
+];
+
 function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -78,7 +90,7 @@ export const generateDemoContacts = (count: number = 25): Contact[] => {
     const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${randomItem(emailDomains)}`;
     const phone = `${randomItem(phonePrefixes)} ${randomInt(9000000000, 9999999999)}`;
     const company = randomItem(companyNames);
-    
+
     contacts.push({
       id: generateId(),
       name,
@@ -105,7 +117,7 @@ export const generateDemoOpportunities = (contacts: Contact[], count: number = 3
     const status = randomItem(statuses);
     const value = randomInt(50000, 5000000);
     const createdAt = randomDate(randomInt(0, 90));
-    
+
     // Generate some tasks
     const taskCount = randomInt(0, 5);
     const tasks: Task[] = [];
@@ -120,7 +132,7 @@ export const generateDemoOpportunities = (contacts: Contact[], count: number = 3
         createdBy: 'demo_user'
       });
     }
-    
+
     // Generate some notes
     const noteCount = randomInt(0, 3);
     const notes: Note[] = [];
@@ -131,7 +143,7 @@ export const generateDemoOpportunities = (contacts: Contact[], count: number = 3
         createdAt: randomDate(randomInt(0, 30))
       });
     }
-    
+
     opportunities.push({
       id: generateId(),
       name,
@@ -162,14 +174,14 @@ export const generateDemoAppointments = (contacts: Contact[], count: number = 15
     'Client Meeting', 'Product Demo', 'Follow-up Call', 'Strategy Session',
     'Proposal Presentation', 'Contract Review', 'Onboarding Call', 'Q&A Session'
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const contact = randomItem(contacts);
     const date = new Date();
     date.setDate(date.getDate() + randomInt(-7, 30));
     const hour = randomInt(9, 17);
     const minute = randomInt(0, 1) * 30; // 0 or 30
-    
+
     appointments.push({
       id: generateId(),
       title: randomItem(titles),
@@ -191,11 +203,11 @@ export const generateDemoConversations = (contacts: Contact[], count: number = 1
     { id: '3', sender: 'them', message: 'We need help with digital marketing', timestamp: randomDate(randomInt(0, 5)) },
     { id: '4', sender: 'me', message: 'Great! Let me send you some information.', timestamp: randomDate(randomInt(0, 4)) }
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const contact = randomItem(contacts);
     const convMessages = messages.slice(0, randomInt(2, 4));
-    
+
     conversations.push({
       id: generateId(),
       contactId: contact.id,
@@ -213,23 +225,24 @@ export const generateDemoConversations = (contacts: Contact[], count: number = 1
 // Initialize demo data in localStorage
 export const initializeDemoData = (): void => {
   if (!isDemoMode()) return;
-  
+
   // Check if demo data already exists
   if (localStorage.getItem('demo_data_initialized') === 'true') return;
-  
+
   // Generate demo data
   const contacts = generateDemoContacts(25);
   const opportunities = generateDemoOpportunities(contacts, 30);
   const appointments = generateDemoAppointments(contacts, 15);
   const conversations = generateDemoConversations(contacts, 10);
-  
+
   // Store in localStorage
   localStorage.setItem('demo_contacts', JSON.stringify(contacts));
   localStorage.setItem('demo_opportunities', JSON.stringify(opportunities));
   localStorage.setItem('demo_appointments', JSON.stringify(appointments));
   localStorage.setItem('demo_conversations', JSON.stringify(conversations));
+  localStorage.setItem('demo_pipeline', JSON.stringify(DEFAULT_STAGES));
   localStorage.setItem('demo_data_initialized', 'true');
-  
+
   console.log('Demo data initialized');
 };
 

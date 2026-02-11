@@ -3,7 +3,7 @@ import { Contact, Opportunity, Appointment, Conversation, Notification, Message,
 import { api } from '../services/api';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { isDemoMode } from '../lib/demoData';
+import { isDemoMode, DEFAULT_STAGES } from '../lib/demoData';
 
 interface AppState {
     currentUser: User | null;
@@ -147,21 +147,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     contacts: [],
     opportunities: [],
-    stages: [
-        // brand-blue
-
-        { id: '16', title: '16 - Yet to contact', color: '#f0bc00' },
-        { id: '21', title: '21 - Cheque Ready', color: '#1ea34f' },
-        // brand-orange (darker)
-        { id: '20.5', title: '20.5 - Negotiations', color: '#06aed7' },
-        { id: '20', title: '20 - Hot', color: '#eb7311' },
-        { id: '19', title: '19 - Warm', color: '#eb7311' },
-        { id: '18', title: '18 - Luke Warm', color: '#eb7311' },
-        { id: '17', title: '17 - Follow Later', color: '#754c9b' },
-        { id: '10', title: '10 - Closed', color: '#1ea34f' },
-        { id: '0', title: '0 - Junk', color: '#808080' },
-        // brand-green
-    ],
+    stages: DEFAULT_STAGES,
     stageCounts: {},
     stagePagination: {},
     updateStages: async (stages) => {
@@ -693,6 +679,13 @@ export const useStore = create<AppState>((set, get) => ({
         get().fetchAppointments();
         get().fetchConversations();
         get().fetchNotifications();
+
+        // Fetch initial stages once to avoid race conditions in pages
+        api.pipelines.get().then(data => {
+            if (data && data.length > 0) {
+                set({ stages: data });
+            }
+        });
 
         // Subscribe to real-time updates
         // Note: We are using fetch instead of subscribe for heavy filtered lists to avoid excessive reads/complexity
