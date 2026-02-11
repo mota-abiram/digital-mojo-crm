@@ -60,6 +60,7 @@ export const DEFAULT_STAGES = [
   { id: '17', title: '17 - Follow Later', color: '#754c9b' },
   { id: '10', title: '10 - Closed', color: '#1ea34f' },
   { id: '0', title: '0 - Junk', color: '#808080' },
+  { id: '0.5', title: '0.5 - No Budget', color: '#808080' },
 ];
 
 function randomItem<T>(arr: T[]): T {
