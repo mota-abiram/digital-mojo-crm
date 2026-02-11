@@ -70,6 +70,7 @@ const Dashboard: React.FC = () => {
             onChange={(e) => setTimeRange(e.target.value)}
             className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
           >
+            <option value="0">Total</option>
             <option value="30">Last 30 Days</option>
             <option value="7">Last 7 Days</option>
             <option value="1">Today</option>
