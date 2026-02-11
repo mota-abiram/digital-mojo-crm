@@ -517,6 +517,28 @@ const firebaseApi = {
             const userRef = doc(db, 'users', userId);
             await setDoc(userRef, { ...data, createdAt: new Date().toISOString() });
         },
+    },
+    pipelines: {
+        get: async () => {
+            const docRef = doc(db, 'settings', 'pipeline');
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return docSnap.data().stages;
+            }
+            return null;
+        },
+        update: async (stages: any[]) => {
+            const docRef = doc(db, 'settings', 'pipeline');
+            await setDoc(docRef, { stages, updatedAt: new Date().toISOString() });
+        },
+        subscribe: (callback: (stages: any[]) => void) => {
+            const docRef = doc(db, 'settings', 'pipeline');
+            return onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    callback(docSnap.data().stages);
+                }
+            });
+        }
     }
 };
 

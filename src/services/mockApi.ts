@@ -440,6 +440,21 @@ export const mockApi = {
       // Mock implementation - just return success
       return;
     }
+  },
+  pipelines: {
+    get: async () => {
+      await delay(200);
+      return getStoredData<any>('demo_pipeline', []);
+    },
+    update: async (stages: any[]) => {
+      await delay(300);
+      saveStoredData('demo_pipeline', stages);
+    },
+    subscribe: (callback: (stages: any[]) => void) => {
+      const stages = getStoredData<any>('demo_pipeline', []);
+      callback(stages);
+      return () => { };
+    }
   }
 };
 

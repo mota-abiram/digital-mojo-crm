@@ -61,6 +61,11 @@ const Settings: React.FC = () => {
     const [isCleaningSources, setIsCleaningSources] = useState(false);
     const [isResettingTasks, setIsResettingTasks] = useState(false);
 
+    // Sync local stages with store stages when they update (e.g. from real-time listener)
+    React.useEffect(() => {
+        setLocalStages(stages);
+    }, [stages]);
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {

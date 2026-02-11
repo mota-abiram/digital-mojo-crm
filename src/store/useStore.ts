@@ -42,7 +42,7 @@ interface AppState {
     updateOpportunity: (id: string, opp: Partial<Opportunity>) => Promise<void>;
     deleteOpportunity: (id: string) => Promise<void>;
     bulkDeleteOpportunities: (ids: string[]) => Promise<void>;
-    updateStages: (stages: { id: string; title: string; color: string }[]) => void;
+    updateStages: (stages: { id: string; title: string; color: string }[]) => Promise<void>;
     fetchStageCounts: () => Promise<void>;
 
     fetchAppointments: () => Promise<void>;
@@ -164,7 +164,10 @@ export const useStore = create<AppState>((set, get) => ({
     ],
     stageCounts: {},
     stagePagination: {},
-    updateStages: (stages) => set({ stages }),
+    updateStages: async (stages) => {
+        await api.pipelines.update(stages);
+        set({ stages });
+    },
     fetchStageCounts: async () => {
         const counts = await api.opportunities.getStageCounts();
         set({ stageCounts: counts });
@@ -702,6 +705,12 @@ export const useStore = create<AppState>((set, get) => ({
         const unsubConvs = api.conversations.subscribe((data) => {
             set({ conversations: data });
         }, userId);
+
+        const unsubStages = api.pipelines.subscribe((data) => {
+            if (data && data.length > 0) {
+                set({ stages: data });
+            }
+        });
 
         // Store unsubscribe functions if needed for cleanup
     }
