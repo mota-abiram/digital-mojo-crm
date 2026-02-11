@@ -119,6 +119,13 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ item, color, onEdit, onDe
                             {stages.find(s => s.id === item.stage)?.title || item.stage}
                         </span>
                     </div>
+
+                    {item.opportunityType && (
+                        <div className="flex text-xs">
+                            <span className="text-gray-500 w-32 shrink-0">Type:</span>
+                            <span className="text-gray-700 font-medium truncate text-brand-blue">{item.opportunityType}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -246,7 +253,9 @@ const Opportunities: React.FC = () => {
         tags: '',
         calendar: '',
         contactValue: 'Standard',
-        followUpDate: ''
+        followUpDate: '',
+        opportunityType: '',
+        followUpAssignee: ''
     });
 
     // Sub-items State
@@ -308,7 +317,8 @@ const Opportunities: React.FC = () => {
     const sortRef = useRef<HTMLDivElement>(null);
     const [filters, setFilters] = useState({
         stage: '',
-        status: ''
+        status: '',
+        opportunityType: ''
     });
 
     const getStageRank = (title: string) => {
@@ -388,8 +398,9 @@ const Opportunities: React.FC = () => {
             // Advanced Filters
             const matchesStage = filters.stage ? opp.stage === filters.stage : true;
             const matchesStatus = filters.status ? opp.status === filters.status : true;
+            const matchesType = filters.opportunityType ? opp.opportunityType === filters.opportunityType : true;
 
-            return matchesSearch && matchesStage && matchesStatus;
+            return matchesSearch && matchesStage && matchesStatus && matchesType;
         }).sort((a, b) => {
             if (sortBy === 'none') {
                 const dateA = new Date(a.createdAt || 0).getTime();
@@ -414,7 +425,7 @@ const Opportunities: React.FC = () => {
                 return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
             }
         });
-    }, [opportunities, searchTerm, filters.stage, filters.status, sortOrder, sortBy, stages]);
+    }, [opportunities, searchTerm, filters.stage, filters.status, filters.opportunityType, sortOrder, sortBy, stages]);
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -500,7 +511,9 @@ const Opportunities: React.FC = () => {
                 tags: Array.isArray(opp.tags) ? opp.tags.join(', ') : '',
                 calendar: opp.calendar || '',
                 contactValue: linkedContact?.Value || 'Standard',
-                followUpDate: opp.followUpDate || ''
+                followUpDate: opp.followUpDate || '',
+                opportunityType: opp.opportunityType || '',
+                followUpAssignee: opp.followUpAssignee || ''
             });
             setTasks(Array.isArray(opp.tasks) ? opp.tasks : []);
             setNotes(Array.isArray(opp.notes) ? opp.notes : []);
@@ -513,7 +526,8 @@ const Opportunities: React.FC = () => {
                 name: '', value: '0', stage: stages[0]?.id || 'New', status: 'Open', source: '',
                 contactName: '', contactEmail: '', contactPhone: '', companyName: '',
                 your_website: '', budget: '',
-                tags: '', calendar: '', contactValue: 'Standard', followUpDate: ''
+                tags: '', calendar: '', contactValue: 'Standard', followUpDate: '',
+                opportunityType: '', followUpAssignee: ''
             });
             setTasks([]);
             setNotes([]);
@@ -528,6 +542,16 @@ const Opportunities: React.FC = () => {
     const handleSubmit = async () => {
         if (!formData.name) {
             toast.error('Opportunity Name is required');
+            return;
+        }
+
+        if (!formData.opportunityType) {
+            toast.error('Opportunity Type is required');
+            return;
+        }
+
+        if (formData.followUpDate && !formData.followUpAssignee) {
+            toast.error('Follow up Assignee is required when a follow up date is set');
             return;
         }
 
@@ -596,6 +620,8 @@ const Opportunities: React.FC = () => {
             calendar: formData.calendar || '',
             status: formData.status || 'Open',
             followUpDate: formData.followUpDate || '',
+            opportunityType: formData.opportunityType || '',
+            followUpAssignee: formData.followUpAssignee || '',
             updatedAt: new Date().toISOString(),
             tasks: tasks || [],
             notes: notes || []
@@ -1115,9 +1141,21 @@ const Opportunities: React.FC = () => {
                                         <option value="Abandoned">Abandoned</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Type</label>
+                                    <select
+                                        value={filters.opportunityType}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, opportunityType: e.target.value }))}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
+                                    >
+                                        <option value="">All Types</option>
+                                        <option value="Real Estate">Real Estate</option>
+                                        <option value="Others">Others</option>
+                                    </select>
+                                </div>
                                 <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                                     <button
-                                        onClick={() => setFilters({ stage: '', status: '' })}
+                                        onClick={() => setFilters({ stage: '', status: '', opportunityType: '' })}
                                         className="text-xs text-red-600 hover:text-red-700 font-medium"
                                     >
                                         Clear Filters
@@ -1144,6 +1182,7 @@ const Opportunities: React.FC = () => {
                             <div className="flex h-full gap-4 min-w-max md:px-1">
                                 {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => {
                                     const stageOpps = visibleOpportunities.filter(o => o.stage === stage.id);
+                                    const isFiltered = !!(searchTerm.trim() || filters.stage || filters.status || filters.opportunityType);
 
                                     return (
                                         <div key={stage.id} className="w-[85vw] md:w-80 snap-center md:snap-align-none shrink-0 h-full">
@@ -1155,8 +1194,8 @@ const Opportunities: React.FC = () => {
                                                 hasMore={stagePagination[stage.id]?.hasMore ?? true}
                                                 onLoadMore={() => loadMoreByStage(stage.id)}
                                                 isLoading={stagePagination[stage.id]?.isLoading ?? false}
-                                                totalCount={stageCounts[stage.id]?.count || 0}
-                                                totalValue={stageCounts[stage.id]?.value || 0}
+                                                totalCount={isFiltered ? stageOpps.length : (stageCounts[stage.id]?.count || 0)}
+                                                totalValue={isFiltered ? stageOpps.reduce((sum, o) => sum + (Number(o.value) || 0), 0) : (stageCounts[stage.id]?.value || 0)}
                                                 appointments={appointments}
                                             />
                                         </div>
@@ -1529,6 +1568,19 @@ const Opportunities: React.FC = () => {
                                                             </select>
                                                         </div>
 
+                                                        <div>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Type <span className="text-red-500">*</span></label>
+                                                            <select
+                                                                value={formData.opportunityType}
+                                                                onChange={e => setFormData({ ...formData, opportunityType: e.target.value as any })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            >
+                                                                <option value="">Select Type</option>
+                                                                <option value="Real Estate">Real Estate</option>
+                                                                <option value="Others">Others</option>
+                                                            </select>
+                                                        </div>
+
                                                         {/* Website */}
                                                         <div>
                                                             <label className="block mb-1.5 text-sm font-medium text-gray-700">Website</label>
@@ -1598,7 +1650,7 @@ const Opportunities: React.FC = () => {
 
                                                         {/* Follow up Section */}
                                                         <div>
-                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up</label>
+                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up Date</label>
                                                             <div className="relative">
                                                                 <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                                                 <input
@@ -1609,6 +1661,20 @@ const Opportunities: React.FC = () => {
                                                                     className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
                                                                 />
                                                             </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up Assignee <span className="text-red-500">*</span></label>
+                                                            <select
+                                                                value={formData.followUpAssignee}
+                                                                onChange={e => setFormData({ ...formData, followUpAssignee: e.target.value })}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                            >
+                                                                <option value="">Select Assignee</option>
+                                                                {TEAM_MEMBERS.map(member => (
+                                                                    <option key={member.id} value={member.id}>{member.name}</option>
+                                                                ))}
+                                                            </select>
                                                         </div>
                                                     </div>
                                                 </section>

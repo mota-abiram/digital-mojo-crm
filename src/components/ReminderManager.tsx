@@ -80,6 +80,10 @@ const ReminderManager: React.FC = () => {
                 todayOpportunities.forEach(opp => {
                     if (!opp.followUpDate || opp.followUpRead) return;
 
+                    // Strictly only notify the specified assignee
+                    const isAssignedToMe = opp.followUpAssignee && (opp.followUpAssignee === currentUser.id || opp.followUpAssignee === currentUser.email);
+                    if (!isAssignedToMe) return;
+
                     const oppKey = `opp-${opp.id}-${opp.followUpDate}`;
 
                     if (notifiedRef.current.has(oppKey)) return;

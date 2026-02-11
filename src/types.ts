@@ -64,6 +64,8 @@ export interface Opportunity {
   notes?: Note[];
   followUpDate?: string;
   followUpRead?: boolean;
+  opportunityType?: 'Real Estate' | 'Others';
+  followUpAssignee?: string;
 }
 
 export interface PipelineColumn {

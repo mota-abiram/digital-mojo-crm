@@ -91,16 +91,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
 
   const todayReminders = useMemo(() => {
-    return todayOpportunities.filter(opp =>
-      opp.status === 'Open'
-    ).map(opp => ({
+    return todayOpportunities.filter(opp => {
+      const isAssignedToMe = opp.followUpAssignee &&
+        (opp.followUpAssignee === currentUser?.id ||
+          opp.followUpAssignee === currentUser?.email);
+      return opp.status === 'Open' && isAssignedToMe;
+    }).map(opp => ({
       id: opp.id,
       type: 'follow-up' as const,
       title: opp.companyName || opp.name,
       time: 'Today',
       description: 'Opportunity follow-up'
     }));
-  }, [todayOpportunities]);
+  }, [todayOpportunities, currentUser]);
 
   const handleLogout = async () => {
     await logout();
