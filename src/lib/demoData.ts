@@ -44,7 +44,7 @@ const opportunityNames = [
   'Video Production Package', 'UI/UX Design Service', 'Lead Generation Program'
 ];
 
-const stages = ['16', '17', '18', '19', '20', '20.5', '21', '10', '0'];
+const stages = ['16', '17', '18', '19', '20', '20.5', '21', '10', '0', '0.5'];
 
 const statuses: ('Open' | 'Won' | 'Lost' | 'Abandoned')[] = ['Open', 'Won', 'Lost', 'Open', 'Open'];
 
