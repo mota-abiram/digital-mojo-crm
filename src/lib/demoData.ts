@@ -12,6 +12,7 @@ export const isDemoMode = (): boolean => {
   return false;
 };
 
+
 // Generate realistic dummy data
 const companyNames = [
   'TechCorp Solutions', 'Digital Innovations', 'Global Enterprises', 'Smart Systems Inc',

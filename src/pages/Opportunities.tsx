@@ -545,16 +545,6 @@ const Opportunities: React.FC = () => {
             return;
         }
 
-        if (!formData.opportunityType) {
-            toast.error('Opportunity Type is required');
-            return;
-        }
-
-        if (formData.followUpDate && !formData.followUpAssignee) {
-            toast.error('Follow up Assignee is required when a follow up date is set');
-            return;
-        }
-
         if (isSubmitting) return;
         setIsSubmitting(true);
 
@@ -1569,7 +1559,7 @@ const Opportunities: React.FC = () => {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Type <span className="text-red-500">*</span></label>
+                                                            <label className="block mb-1.5 text-sm font-medium text-gray-700">Opportunity Type</label>
                                                             <select
                                                                 value={formData.opportunityType}
                                                                 onChange={e => setFormData({ ...formData, opportunityType: e.target.value as any })}
@@ -1664,7 +1654,7 @@ const Opportunities: React.FC = () => {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up Assignee <span className="text-red-500">*</span></label>
+                                                            <label className="block mb-2 text-sm font-medium text-gray-700">Follow up Assignee</label>
                                                             <select
                                                                 value={formData.followUpAssignee}
                                                                 onChange={e => setFormData({ ...formData, followUpAssignee: e.target.value })}
