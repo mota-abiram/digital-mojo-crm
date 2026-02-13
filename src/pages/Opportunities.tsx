@@ -460,15 +460,15 @@ const Opportunities: React.FC = () => {
             const matchesStatus = filters.status ? opp.status === filters.status : true;
             const matchesType = filters.opportunityType ? opp.opportunityType === filters.opportunityType : true;
 
-            // Follow-up specific filtering: Only show Today/Future dates
-            if (sortBy === 'followUp') {
+            // Follow-up specific filtering: Only show Today/Future dates in List View
+            if (sortBy === 'followUp' && viewMode === 'list') {
                 if (!opp.followUpDate) return false;
                 if (new Date(opp.followUpDate).getTime() < today) return false;
             }
 
             return matchesSearch && matchesStage && matchesStatus && matchesType;
         }).sort(sortOpps);
-    }, [opportunities, searchTerm, filters.stage, filters.status, filters.opportunityType, sortOrder, sortBy, stages]);
+    }, [opportunities, searchTerm, filters.stage, filters.status, filters.opportunityType, sortOrder, sortBy, stages, viewMode]);
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
