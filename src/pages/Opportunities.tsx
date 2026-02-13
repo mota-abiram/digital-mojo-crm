@@ -442,6 +442,10 @@ const Opportunities: React.FC = () => {
     };
 
     const visibleOpportunities = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const today = now.getTime();
+
         return opportunities.filter(opp => {
             // Text Search
             const matchesSearch =
@@ -455,6 +459,12 @@ const Opportunities: React.FC = () => {
             const matchesStage = filters.stage.length > 0 ? filters.stage.includes(opp.stage) : true;
             const matchesStatus = filters.status ? opp.status === filters.status : true;
             const matchesType = filters.opportunityType ? opp.opportunityType === filters.opportunityType : true;
+
+            // Follow-up specific filtering for "Soonest First"
+            if (sortBy === 'followUp' && sortOrder === 'asc') {
+                if (!opp.followUpDate) return false;
+                if (new Date(opp.followUpDate).getTime() < today) return false;
+            }
 
             return matchesSearch && matchesStage && matchesStatus && matchesType;
         }).sort(sortOpps);
