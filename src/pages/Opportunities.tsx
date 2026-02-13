@@ -311,12 +311,12 @@ const Opportunities: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isSortOpen, setIsSortOpen] = useState(false);
-    const [sortBy, setSortBy] = useState<'date' | 'stage' | 'none'>('none');
+    const [sortBy, setSortBy] = useState<'date' | 'stage' | 'followUp' | 'none'>('none');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const filterRef = useRef<HTMLDivElement>(null);
     const sortRef = useRef<HTMLDivElement>(null);
     const [filters, setFilters] = useState({
-        stage: '',
+        stage: [] as string[],
         status: '',
         opportunityType: ''
     });
@@ -385,6 +385,39 @@ const Opportunities: React.FC = () => {
         };
     }, [viewMode, hasMoreOpportunities, loadMoreOpportunities, isLoading]);
 
+    const sortOpps = (a: Opportunity, b: Opportunity) => {
+        if (sortBy === 'none') {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+        }
+        if (sortBy === 'stage') {
+            const stageA = stages.find(s => s.id === a.stage);
+            const stageB = stages.find(s => s.id === b.stage);
+            const rankA = stageA ? getStageRank(stageA.title) : 999;
+            const rankB = stageB ? getStageRank(stageB.title) : 999;
+            if (rankA !== rankB) {
+                return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+            }
+            // Keep opportunities inside same stage sorted by date descending
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
+        } else if (sortBy === 'followUp') {
+            const dateA = a.followUpDate ? new Date(a.followUpDate).getTime() : (sortOrder === 'asc' ? Infinity : -1);
+            const dateB = b.followUpDate ? new Date(b.followUpDate).getTime() : (sortOrder === 'asc' ? Infinity : -1);
+            if (dateA !== dateB) {
+                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            }
+            // Fallback to createdAt
+            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        } else {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+    };
+
     const visibleOpportunities = useMemo(() => {
         return opportunities.filter(opp => {
             // Text Search
@@ -396,35 +429,12 @@ const Opportunities: React.FC = () => {
                 opp.source?.toLowerCase().includes(searchTerm.toLowerCase());
 
             // Advanced Filters
-            const matchesStage = filters.stage ? opp.stage === filters.stage : true;
+            const matchesStage = filters.stage.length > 0 ? filters.stage.includes(opp.stage) : true;
             const matchesStatus = filters.status ? opp.status === filters.status : true;
             const matchesType = filters.opportunityType ? opp.opportunityType === filters.opportunityType : true;
 
             return matchesSearch && matchesStage && matchesStatus && matchesType;
-        }).sort((a, b) => {
-            if (sortBy === 'none') {
-                const dateA = new Date(a.createdAt || 0).getTime();
-                const dateB = new Date(b.createdAt || 0).getTime();
-                return dateB - dateA;
-            }
-            if (sortBy === 'stage') {
-                const stageA = stages.find(s => s.id === a.stage);
-                const stageB = stages.find(s => s.id === b.stage);
-                const rankA = stageA ? getStageRank(stageA.title) : 999;
-                const rankB = stageB ? getStageRank(stageB.title) : 999;
-                if (rankA !== rankB) {
-                    return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
-                }
-                // Keep opportunities inside same stage sorted by date descending
-                const dateA = new Date(a.createdAt || 0).getTime();
-                const dateB = new Date(b.createdAt || 0).getTime();
-                return dateB - dateA;
-            } else {
-                const dateA = new Date(a.createdAt || 0).getTime();
-                const dateB = new Date(b.createdAt || 0).getTime();
-                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-            }
-        });
+        }).sort(sortOpps);
     }, [opportunities, searchTerm, filters.stage, filters.status, filters.opportunityType, sortOrder, sortBy, stages]);
 
     const handleDragEnd = async (event: DragEndEvent) => {
@@ -1068,7 +1078,12 @@ const Opportunities: React.FC = () => {
                             className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isSortOpen ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                         >
                             <ArrowUpDown size={18} />
-                            Sort: {sortBy === 'none' ? 'Default' : (sortOrder === 'asc' ? 'Stage Asc' : 'Stage Desc')}
+                            Sort: {
+                                sortBy === 'none' ? 'Default' :
+                                    sortBy === 'stage' ? (sortOrder === 'asc' ? 'Stage Asc' : 'Stage Desc') :
+                                        sortBy === 'followUp' ? (sortOrder === 'asc' ? 'Follow-up Asc' : 'Follow-up Desc') :
+                                            (sortOrder === 'asc' ? 'Date Asc' : 'Date Desc')
+                            }
                         </button>
 
                         {isSortOpen && (
@@ -1092,30 +1107,76 @@ const Opportunities: React.FC = () => {
                                 >
                                     Stage: Descending (21 → 0)
                                 </button>
+                                <div className="my-1 border-t border-gray-100" />
+                                <button
+                                    onClick={() => { setSortBy('followUp'); setSortOrder('asc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'followUp' && sortOrder === 'asc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Follow-up: Soonest First
+                                </button>
+                                <button
+                                    onClick={() => { setSortBy('followUp'); setSortOrder('desc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'followUp' && sortOrder === 'desc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Follow-up: Latest First
+                                </button>
+                                <div className="my-1 border-t border-gray-100" />
+                                <button
+                                    onClick={() => { setSortBy('date'); setSortOrder('asc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'date' && sortOrder === 'asc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Created Date: Oldest First
+                                </button>
+                                <button
+                                    onClick={() => { setSortBy('date'); setSortOrder('desc'); setIsSortOpen(false); }}
+                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'date' && sortOrder === 'desc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
+                                >
+                                    Created Date: Newest First
+                                </button>
                             </div>
                         )}
                     </div>
                     <div className="relative" ref={filterRef}>
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || Object.values(filters).some(Boolean) ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                            className={`px-3 py-2 border rounded-lg flex items-center gap-2 text-sm font-medium ${isFilterOpen || filters.stage.length > 0 || filters.status || filters.opportunityType ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
                         >
-                            <Filter size={18} /> Filters {(Object.values(filters).some(Boolean)) && <span className="w-2 h-2 rounded-full bg-brand-blue mb-2"></span>}
+                            <Filter size={18} /> Filters {(filters.stage.length > 0 || filters.status || filters.opportunityType) && <span className="w-2 h-2 rounded-full bg-brand-blue mb-2"></span>}
                         </button>
 
                         {/* Filter Dropdown */}
                         {isFilterOpen && (
                             <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 mb-1">Stage</label>
-                                    <select
-                                        value={filters.stage}
-                                        onChange={(e) => setFilters(prev => ({ ...prev, stage: e.target.value }))}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
-                                    >
-                                        <option value="">All Stages</option>
-                                        {stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
-                                    </select>
+                                    <label className="block text-xs font-semibold text-gray-500 mb-2">Stages</label>
+                                    <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar pr-2 border border-gray-100 rounded-lg p-2 bg-gray-50/50">
+                                        <label className="flex items-center gap-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors group">
+                                            <input
+                                                type="checkbox"
+                                                checked={filters.stage.length === 0}
+                                                onChange={() => setFilters(prev => ({ ...prev, stage: [] }))}
+                                                className="w-4 h-4 text-brand-blue border-gray-300 rounded focus:ring-brand-blue"
+                                            />
+                                            <span className={`text-sm ${filters.stage.length === 0 ? 'text-brand-blue font-bold' : 'text-gray-600'}`}>All Stages</span>
+                                        </label>
+                                        <div className="my-1 border-t border-gray-200/50" />
+                                        {stages.sort((a, b) => getStageRank(a.title) - getStageRank(b.title)).map(s => (
+                                            <label key={s.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1.5 rounded transition-colors group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filters.stage.includes(s.id)}
+                                                    onChange={(e) => {
+                                                        const newStages = e.target.checked
+                                                            ? [...filters.stage, s.id]
+                                                            : filters.stage.filter(id => id !== s.id);
+                                                        setFilters(prev => ({ ...prev, stage: newStages }));
+                                                    }}
+                                                    className="w-4 h-4 text-brand-blue border-gray-300 rounded focus:ring-brand-blue"
+                                                />
+                                                <span className={`text-sm ${filters.stage.includes(s.id) ? 'text-brand-blue font-medium' : 'text-gray-600'}`}>{s.title}</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 mb-1">Status</label>
@@ -1145,7 +1206,7 @@ const Opportunities: React.FC = () => {
                                 </div>
                                 <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                                     <button
-                                        onClick={() => setFilters({ stage: '', status: '', opportunityType: '' })}
+                                        onClick={() => setFilters({ stage: [], status: '', opportunityType: '' })}
                                         className="text-xs text-red-600 hover:text-red-700 font-medium"
                                     >
                                         Clear Filters
@@ -1170,9 +1231,9 @@ const Opportunities: React.FC = () => {
                         <div className="h-full overflow-x-auto overflow-y-hidden md:custom-scrollbar pb-4 md:px-1 snap-x snap-mandatory scroll-smooth">
                             {/* Desktop/Tablet Board View & Mobile Slider */}
                             <div className="flex h-full gap-4 min-w-max md:px-1">
-                                {sortedStages.filter(stage => !filters.stage || filters.stage === stage.id).map(stage => {
+                                {sortedStages.filter(stage => filters.stage.length === 0 || filters.stage.includes(stage.id)).map(stage => {
                                     const stageOpps = visibleOpportunities.filter(o => o.stage === stage.id);
-                                    const isFiltered = !!(searchTerm.trim() || filters.stage || filters.status || filters.opportunityType);
+                                    const isFiltered = !!(searchTerm.trim() || filters.stage.length > 0 || filters.status || filters.opportunityType);
 
                                     return (
                                         <div key={stage.id} className="w-[85vw] md:w-80 snap-center md:snap-align-none shrink-0 h-full">
@@ -1642,13 +1703,14 @@ const Opportunities: React.FC = () => {
                                                         <div>
                                                             <label className="block mb-2 text-sm font-medium text-gray-700">Follow up Date</label>
                                                             <div className="relative">
-                                                                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                                <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                                                 <input
                                                                     type="date"
                                                                     placeholder="dd/mm/yyyy"
                                                                     value={formData.followUpDate}
                                                                     onChange={e => setFormData({ ...formData, followUpDate: e.target.value })}
-                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                    onClick={(e) => (e.target as any).showPicker?.()}
+                                                                    className="w-full pl-10 p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue cursor-pointer"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1695,7 +1757,8 @@ const Opportunities: React.FC = () => {
                                                                 type="date"
                                                                 value={appointmentForm.date}
                                                                 onChange={e => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
-                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                onClick={(e) => (e.target as any).showPicker?.()}
+                                                                className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue cursor-pointer"
                                                             />
                                                         </div>
                                                         <div>
@@ -1967,7 +2030,8 @@ const Opportunities: React.FC = () => {
                                                                             type="date"
                                                                             value={newTaskDueDate}
                                                                             onChange={e => setNewTaskDueDate(e.target.value)}
-                                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                                                                            onClick={(e) => (e.target as any).showPicker?.()}
+                                                                            className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue cursor-pointer"
                                                                         />
                                                                     </div>
                                                                     <div className="flex gap-2 items-center flex-1">
