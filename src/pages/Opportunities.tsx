@@ -327,44 +327,13 @@ const Opportunities: React.FC = () => {
     };
 
     const sortedStages = useMemo(() => {
-        if (sortBy === 'none') return stages;
-
-        if (sortBy === 'followUp') {
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
-            const today = now.getTime();
-
-            const getStageExtremeDate = (stageId: string) => {
-                const stageOpps = opportunities.filter(o => o.stage === stageId && o.followUpDate);
-                // Filter for Today/Future dates (matching our Timeline view logic)
-                const futureDates = stageOpps
-                    .map(o => new Date(o.followUpDate!).getTime())
-                    .filter(d => d >= today);
-
-                if (futureDates.length === 0) {
-                    return sortOrder === 'asc' ? Infinity : -Infinity;
-                }
-
-                return sortOrder === 'asc'
-                    ? Math.min(...futureDates)
-                    : Math.max(...futureDates);
-            };
-
-            return [...stages].sort((a, b) => {
-                const valA = getStageExtremeDate(a.id);
-                const valB = getStageExtremeDate(b.id);
-
-                if (valA !== valB) {
-                    return sortOrder === 'asc' ? valA - valB : valB - valA;
-                }
-                // Fallback to rank if dates are same or missing
-                return getStageRank(a.title) - getStageRank(b.title);
-            });
-        }
-
         const sorted = [...stages].sort((a, b) => getStageRank(a.title) - getStageRank(b.title));
-        return sortOrder === 'asc' ? sorted : [...sorted].reverse();
-    }, [stages, sortOrder, sortBy, opportunities]);
+        // Only reverse stage order if sorting by 'stage' and order is 'desc'
+        if (sortBy === 'stage' && sortOrder === 'desc') {
+            return sorted.reverse();
+        }
+        return sorted;
+    }, [stages, sortBy, sortOrder]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -1148,7 +1117,7 @@ const Opportunities: React.FC = () => {
                             Sort: {
                                 sortBy === 'none' ? 'Default' :
                                     sortBy === 'stage' ? (sortOrder === 'asc' ? 'Stage Asc' : 'Stage Desc') :
-                                        sortBy === 'followUp' ? (sortOrder === 'asc' ? 'Timeline: Nearest' : 'Timeline: Furthest') :
+                                        sortBy === 'followUp' ? (sortOrder === 'asc' ? 'Follow up: Nearest' : 'Follow up: Furthest') :
                                             (sortOrder === 'asc' ? 'Date Asc' : 'Date Desc')
                             }
                         </button>
@@ -1179,13 +1148,13 @@ const Opportunities: React.FC = () => {
                                     onClick={() => { setSortBy('followUp'); setSortOrder('asc'); setIsSortOpen(false); }}
                                     className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'followUp' && sortOrder === 'asc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
                                 >
-                                    Timeline: Nearest First (Next Task)
+                                    Follow up: Nearest First
                                 </button>
                                 <button
                                     onClick={() => { setSortBy('followUp'); setSortOrder('desc'); setIsSortOpen(false); }}
                                     className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'followUp' && sortOrder === 'desc' ? 'text-brand-blue font-bold bg-blue-50' : 'text-gray-700'}`}
                                 >
-                                    Timeline: Furthest First (Future Plans)
+                                    Follow up: Furthest First
                                 </button>
                                 <div className="my-1 border-t border-gray-100" />
                                 <button
