@@ -466,8 +466,8 @@ const Opportunities: React.FC = () => {
             const matchesStatus = filters.status ? opp.status === filters.status : true;
             const matchesType = filters.opportunityType ? opp.opportunityType === filters.opportunityType : true;
 
-            // Follow-up specific filtering: Only show Today/Future dates in List View
-            if (sortBy === 'followUp' && viewMode === 'list') {
+            // Follow-up specific filtering: Only show Today/Future dates
+            if (sortBy === 'followUp') {
                 if (!opp.followUpDate) return false;
                 if (new Date(opp.followUpDate).getTime() < today) return false;
             }
