@@ -404,8 +404,31 @@ const Opportunities: React.FC = () => {
             const dateB = new Date(b.createdAt || 0).getTime();
             return dateB - dateA;
         } else if (sortBy === 'followUp') {
-            const dateA = a.followUpDate ? new Date(a.followUpDate).getTime() : (sortOrder === 'asc' ? Infinity : -1);
-            const dateB = b.followUpDate ? new Date(b.followUpDate).getTime() : (sortOrder === 'asc' ? Infinity : -1);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const today = now.getTime();
+
+            const getPriority = (dateStr?: string) => {
+                if (!dateStr) return 3; // No date
+                const d = new Date(dateStr).getTime();
+                if (d >= today) return 1; // Today or Future
+                return 2; // Past (Overdue)
+            };
+
+            const prioA = getPriority(a.followUpDate);
+            const prioB = getPriority(b.followUpDate);
+
+            if (prioA !== prioB) {
+                // Always keep "No date" (priority 3) at the bottom
+                if (prioA === 3) return 1;
+                if (prioB === 3) return -1;
+                // Otherwise sort by priority (1: Future, 2: Past)
+                return sortOrder === 'asc' ? prioA - prioB : prioB - prioA;
+            }
+
+            const dateA = a.followUpDate ? new Date(a.followUpDate).getTime() : 0;
+            const dateB = b.followUpDate ? new Date(b.followUpDate).getTime() : 0;
+
             if (dateA !== dateB) {
                 return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
             }
