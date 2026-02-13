@@ -327,12 +327,15 @@ const Opportunities: React.FC = () => {
     };
 
     const sortedStages = useMemo(() => {
-        const sorted = [...stages].sort((a, b) => getStageRank(a.title) - getStageRank(b.title));
-        // Only reverse stage order if sorting by 'stage' and order is 'desc'
-        if (sortBy === 'stage' && sortOrder === 'desc') {
-            return sorted.reverse();
+        // Only apply numeric sort if explicitly sorting by 'stage'
+        if (sortBy === 'stage') {
+            const sorted = [...stages].sort((a, b) => getStageRank(a.title) - getStageRank(b.title));
+            return sortOrder === 'desc' ? sorted.reverse() : sorted;
         }
-        return sorted;
+
+        // Otherwise, use the default order as defined in the system/database
+        // This follows the order: 16, 21, 20.5, 20, 19, 18, 17, 10, 0, 0.5
+        return stages;
     }, [stages, sortBy, sortOrder]);
 
     useEffect(() => {
