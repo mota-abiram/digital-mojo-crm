@@ -1,16 +1,9 @@
 import { Contact, Opportunity, Appointment, Conversation, Message, Task, Note } from '../types';
 
 // Demo mode detection
-export const isDemoMode = (): boolean => {
-  // Check URL parameter
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('demo') === 'true') return true;
-    // Check localStorage
-    if (localStorage.getItem('demo_mode') === 'true') return true;
-  }
-  return false;
-};
+// Portfolio build: demo is always on; opt out with ?demo=false
+export const isDemoMode = (): boolean =>
+  typeof window === 'undefined' || new URLSearchParams(window.location.search).get('demo') !== 'false';
 
 
 // Generate realistic dummy data
